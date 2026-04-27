@@ -24,6 +24,9 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/server.js ./
 
+# Create index.html from demo.html at container startup
+RUN cp public/demo.html public/index.html || true
+
 # Run migrations on startup, then start server
 EXPOSE 3000
 CMD ["sh", "-c", "npx prisma migrate deploy && node server.js"]
