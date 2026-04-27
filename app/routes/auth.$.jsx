@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useFetcher } from "react-router";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
-import styles from "../styles/app.css";
+import "../styles/app.css";
 
 export const loader = async ({ request }) => {
   await authenticate.admin(request);
@@ -217,61 +217,61 @@ export default function Dashboard() {
   return (
     <s-page heading="AfterFlow AI - Order Automation Suite">
       <s-section>
-        <div className={styles.liveCard}>
-          <div className={styles.cardHeader}>
-            <div className={styles.brandRow}>
+        <div className="liveCard">
+          <div className="cardHeader">
+            <div className="brandRow">
               <img
                 src="/app-icon.png"
                 alt="AfterFlow AI"
-                className={styles.logo}
+                className="logo"
               />
-              <span className={styles.brandName}>AfterFlow AI</span>
+              <span className="brandName">AfterFlow AI</span>
             </div>
-            <div className={styles.liveIndicator}>
-              <span className={styles.liveDot} />
-              <span className={styles.liveText}>LIVE</span>
+            <div className="liveIndicator">
+              <span className="liveDot" />
+              <span className="liveText">LIVE</span>
             </div>
           </div>
 
-          <div className={styles.flowRow}>
+          <div className="flowRow">
             {DEMO_STEPS.map((step, idx) => (
-              <div key={step.phase} className={styles.flowStep}>
+              <div key={step.phase} className="flowStep">
                 {idx > 0 && (
-                  <div className={`${styles.arrow} ${livePhase !== "idle" && livePhase !== step.phase ? styles.arrowActive : ""}`}>
+                  <div className={`arrow ${livePhase !== "idle" && livePhase !== step.phase ? "arrowActive" : ""}`}>
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                       <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </div>
                 )}
-                <div className={`${styles.stepBox} ${livePhase === step.phase ? styles[step.phase.toLowerCase()] : styles.stepIdle}`}>
-                  <div className={styles.stepLabel}>{step.label}</div>
+                <div className={`stepBox ${livePhase === step.phase ? step.phase.replace("_", "-") : "stepIdle"}`}>
+                  <div className="stepLabel">{step.label}</div>
                   {step.content ? (
-                    <div className={styles.stepContent}>{step.content}</div>
+                    <div className="stepContent">{step.content}</div>
                   ) : step.phase === "AI_THINKING" ? (
-                    <div className={styles.thinkingWrapper}>
-                      <div className={styles.progressBar}>
-                        <div className={styles.progressFill} />
+                    <div className="thinkingWrapper">
+                      <div className="progressBar">
+                        <div className="progressFill" />
                       </div>
-                      <span id="ai-thinking-dots" className={styles.thinkingDots}>.</span>
+                      <span id="ai-thinking-dots" className="thinkingDots">.</span>
                     </div>
                   ) : step.phase === "ACTION_TAKEN" ? (
                     showTags ? (
-                      <div className={styles.tagsWrapper}>
+                      <div className="tagsWrapper">
                         {Object.keys(TAG_STYLES).map((tag) => (
                           <span
                             key={tag}
-                            className={styles.tag}
+                            className="tag"
                             style={TAG_STYLES[tag]}
                           >
                             {tag}
                           </span>
                         ))}
-                        <div className={styles.successLine}>
+                        <div className="successLine">
                           Tags applied to Shopify order
                         </div>
                       </div>
                     ) : (
-                      <div className={styles.waitingLine}>Awaiting AI...</div>
+                      <div className="waitingLine">Awaiting AI...</div>
                     )
                   ) : null}
                 </div>
@@ -279,7 +279,7 @@ export default function Dashboard() {
             ))}
           </div>
 
-          <div className={styles.cardActions}>
+          <div className="cardActions">
             <s-button
               onClick={startLiveDemo}
               variant="primary"
