@@ -1,5 +1,3 @@
-import prisma from "../db.server";
-
 const AI_PROMPT = `Act as an e-commerce expert. Analyze this order note and return a JSON object with the following exact structure:
 {
   "summary": "one sentence summary of the customer's intent",
@@ -64,20 +62,13 @@ export async function analyzeOrderNote(note, orderId) {
       );
     }
   } catch (error) {
-    console.error(`[AI] Failed to analyze order ${orderId}:`, error.message);
-    const errMsg = error instanceof Error ? error.message : String(error);
-    try {
-      await prisma.aiLog.create({
-        data: { orderId, status: "error", input: note, output: "", error: errMsg, processedAt: new Date() },
-      });
-    } catch (dbErr) {
-      console.error(`[AI] Prisma error log failed:`, dbErr instanceof Error ? dbErr.message : String(dbErr));
-    }
+    // Log errors locally — Prisma writes are skipped in standalone mode (no DATABASE_URL)
+    console.error(`[AI] Failed to analyze order ${orderId}:`, error instanceof Error ? error.message : String(error));
     return {
       summary: note.slice(0, 120),
       tags: ["manual-review"],
       urgency: "normal",
-      error: errMsg,
+      error: error instanceof Error ? error.message : String(error),
     };
   }
 
@@ -86,27 +77,11 @@ export async function analyzeOrderNote(note, orderId) {
     `[AI] Order ${orderId} analyzed in ${duration}ms — urgency=${parsed.urgency}, tags=${JSON.stringify(parsed.tags)}`
   );
 
-  const result = {
+  return {
     summary: parsed.summary,
     tags: parsed.tags,
     urgency: parsed.urgency,
   };
-
-  // Persist to Prisma
-  try {
-    await prisma.orderAnalysis.upsert({
-      where: { orderId },
-      update: { originalNote: note, urgency: result.urgency, tags: JSON.stringify(result.tags), summary: result.summary },
-      create: { orderId, originalNote: note, urgency: result.urgency, tags: JSON.stringify(result.tags), summary: result.summary },
-    });
-    await prisma.aiLog.create({
-      data: { orderId, status: "success", input: note, output: JSON.stringify(result), error: "", processedAt: new Date() },
-    });
-  } catch (dbErr) {
-    console.error(`[AI] Prisma write failed for ${orderId}:`, dbErr instanceof Error ? dbErr.message : String(dbErr));
-  }
-
-  return result;
 }
 
 export async function updateShopifyOrderTags(admin, orderId, newTags) {
