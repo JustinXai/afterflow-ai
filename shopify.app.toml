@@ -31,4 +31,5 @@ scopes = "read_orders,write_orders"
 redirect_urls = [
   "https://afterflow-ai-production.up.railway.app/auth/callback",
   "https://afterflow-ai-production.up.railway.app/auth/shopify/callback",
+  "https://afterflow-ai-production.up.railway.app/api/auth"
 ]

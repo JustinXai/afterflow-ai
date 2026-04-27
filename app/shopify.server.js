@@ -7,6 +7,18 @@ import {
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import prisma from "./db.server";
 
+const requiredEnvVars = [
+  "SHOPIFY_APP_URL",
+  "SHOPIFY_API_KEY",
+  "SHOPIFY_API_SECRET",
+];
+
+const missing = requiredEnvVars.filter((key) => !process.env[key]);
+if (missing.length > 0) {
+  console.error("[shopify.server] Missing environment variables:", missing.join(", "));
+  console.error("[shopify.server] Please set them in Railway Dashboard → Variables tab.");
+}
+
 if (!process.env.SHOPIFY_APP_URL) {
   throw new Error(
     "Missing SHOPIFY_APP_URL environment variable.\n" +
@@ -15,22 +27,29 @@ if (!process.env.SHOPIFY_APP_URL) {
   );
 }
 
-const shopify = shopifyApp({
-  apiKey: process.env.SHOPIFY_API_KEY,
-  apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
-  apiVersion: ApiVersion.October25,
-  scopes: process.env.SCOPES?.split(","),
-  appUrl: process.env.SHOPIFY_APP_URL,
-  authPathPrefix: "/auth",
-  sessionStorage: new PrismaSessionStorage(prisma),
-  distribution: AppDistribution.AppStore,
-  future: {
-    expiringOfflineAccessTokens: true,
-  },
-  ...(process.env.SHOP_CUSTOM_DOMAIN
-    ? { customShopDomains: [process.env.SHOP_CUSTOM_DOMAIN] }
-    : {}),
-});
+let shopify;
+
+try {
+  shopify = shopifyApp({
+    apiKey: process.env.SHOPIFY_API_KEY,
+    apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
+    apiVersion: ApiVersion.October25,
+    scopes: process.env.SCOPES?.split(","),
+    appUrl: process.env.SHOPIFY_APP_URL,
+    authPathPrefix: "/auth",
+    sessionStorage: new PrismaSessionStorage(prisma),
+    distribution: AppDistribution.AppStore,
+    future: {
+      expiringOfflineAccessTokens: true,
+    },
+    ...(process.env.SHOP_CUSTOM_DOMAIN
+      ? { customShopDomains: [process.env.SHOP_CUSTOM_DOMAIN] }
+      : {}),
+  });
+} catch (err) {
+  console.error("[shopify.server] Failed to initialize Shopify:", err.message);
+  throw err;
+}
 
 export default shopify;
 export const apiVersion = ApiVersion.October25;

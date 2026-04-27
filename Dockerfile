@@ -1,13 +1,16 @@
 FROM node:20-alpine
-# 安装 openssl 和 libc6-compat (Alpine 运行 Prisma 必装)
 RUN apk add --no-cache openssl libc6-compat
 
 EXPOSE 3000
 WORKDIR /app
 ENV NODE_ENV=production
+ENV HOST=0.0.0.0
+ENV PORT=3000
 ENV SHOPIFY_APP_URL=https://afterflow-ai-production.up.railway.app
-# Gemini API key — inject via `fly secrets set GEMINI_API_KEY=...` before deploy
 ENV GEMINI_API_KEY=""
+ENV SHOPIFY_API_KEY=""
+ENV SHOPIFY_API_SECRET=""
+ENV SCOPES="read_orders,write_orders"
 
 # 1. 复制依赖描述文件
 COPY package.json package-lock.json* ./
