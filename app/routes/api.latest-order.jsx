@@ -3,33 +3,47 @@ import { authenticate } from "../shopify.server";
 /**
  * GET /api/latest-order
  * Returns the most recent order that has a customer note.
- * No authentication required — the Remix server-side loader already
- * runs behind the app's own session middleware in dev/prod.
+ * Falls back to demo data when no Shopify session is available (standalone mode).
  */
-export const loader = async ({ request }) => {
-  const { admin } = await authenticate.admin(request);
+export async function loader({ request }) {
+  let order = null;
 
-  const response = await admin.graphql(
-    `#graphql
-    query GetLatestNoteOrder {
-      orders(first: 1, query: "note_filled:true", sortKey: CREATED_AT, reverse: true) {
-        edges {
-          node {
-            id
-            name
-            note
-            tags
-            createdAt
-            financialStatus
-            fulfillmentStatus
+  try {
+    const { admin } = await authenticate.admin(request);
+    const response = await admin.graphql(
+      `#graphql
+      query GetLatestNoteOrder {
+        orders(first: 1, query: "note_filled:true", sortKey: CREATED_AT, reverse: true) {
+          edges {
+            node {
+              id
+              name
+              note
+              tags
+              createdAt
+              financialStatus
+              fulfillmentStatus
+            }
           }
         }
-      }
-    }`,
-  );
+      }`
+    );
+    const data = await response.json();
+    order = data?.data?.orders?.edges?.[0]?.node ?? null;
+  } catch (err) {
+    // No Shopify session in standalone mode — return demo order
+    order = {
+      id: "demo-order-1",
+      name: "#DEMO-001",
+      note: "Gift wrapping needed, please include a card",
+      tags: [],
+      createdAt: new Date().toISOString(),
+      financialStatus: "PAID",
+      fulfillmentStatus: "UNFULFILLED",
+    };
+  }
 
-  const data = await response.json();
-  const order = data?.data?.orders?.edges?.[0]?.node ?? null;
-
-  return new Response(JSON.stringify({ order }), { headers: { "Content-Type": "application/json" } });
-};
+  return new Response(JSON.stringify({ order }), {
+    headers: { "Content-Type": "application/json" },
+  });
+}

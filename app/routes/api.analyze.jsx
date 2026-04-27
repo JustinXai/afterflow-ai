@@ -5,9 +5,17 @@ import { analyzeOrderNote } from "../models/ai.server";
  * POST /api/analyze
  * Body: { note: string, orderId?: string }
  * Returns DeepSeek AI parsed result: { urgency, tags, summary, error? }
+ * Works standalone (no Shopify session needed) or embedded (with session).
  */
-export const action = async ({ request }) => {
-  const { admin } = await authenticate.admin(request);
+export async function action({ request }) {
+  // Try Shopify auth — in standalone mode, admin will be null/unavailable
+  let admin = null;
+  try {
+    const auth = await authenticate.admin(request);
+    admin = auth.admin;
+  } catch (err) {
+    // Auth failed (no session in standalone mode) — that's fine for /api/analyze
+  }
 
   const body = await request.json();
   const { note, orderId } = body;
