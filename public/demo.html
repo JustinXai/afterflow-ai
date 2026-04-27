@@ -2,671 +2,719 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>AfterFlow AI — Alpha Console</title>
+  <title>AfterFlow AI — Order Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    *, *::before, *::after { box-sizing: border-box; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:           #07070f;
-      --card-bg:      rgba(11, 11, 24, 0.82);
-      --border:       rgba(30, 30, 60, 0.9);
-      --purple-deep:  #6c5ce7;
-      --purple-glow:  rgba(108, 92, 231, 0.35);
-      --text-primary: #e0e0f0;
-      --text-muted:   #4a4a70;
-      --text-sub:     #7070a0;
+      --bg:           #f4f5f7;
+      --surface:      #ffffff;
+      --border:       #e1e4e8;
+      --border-hover: #d0d4d9;
+      --accent:       #5c6ac4;
+      --accent-hover: #434da5;
+      --accent-light: #f0f1fb;
+      --text:         #212b36;
+      --text-muted:   #637381;
+      --text-sub:     #919eab;
+      --success:      #239b3a;
+      --success-bg:   #e3f4e5;
+      --warning:      #cc7c00;
+      --warning-bg:   #fff4e5;
+      --danger:       #d72b2b;
+      --danger-bg:    #fde8e8;
+      --info:         #0070f3;
+      --info-bg:      #e8f4fd;
     }
 
     body {
-      margin: 0;
-      background: var(--bg);
-      color: white;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
-      padding: 3rem 1rem 7rem;
-      position: relative;
-      overflow-x: hidden;
+      padding: 0;
     }
 
-    /* ── Ambient glow orbs (AI guarding the night) ── */
-    .orb {
-      position: fixed;
-      border-radius: 50%;
-      filter: blur(80px);
-      pointer-events: none;
-      z-index: 0;
-      animation: orbDrift 20s ease-in-out infinite;
-    }
-    .orb-1 {
-      width: 600px; height: 600px;
-      background: radial-gradient(circle, rgba(108, 92, 231, 0.07) 0%, transparent 70%);
-      top: -20%; left: -15%;
-      animation-duration: 22s;
-    }
-    .orb-2 {
-      width: 500px; height: 500px;
-      background: radial-gradient(circle, rgba(155, 89, 182, 0.06) 0%, transparent 70%);
-      bottom: -10%; right: -10%;
-      animation-duration: 28s;
-      animation-delay: -8s;
-    }
-    .orb-3 {
-      width: 350px; height: 350px;
-      background: radial-gradient(circle, rgba(124, 58, 237, 0.05) 0%, transparent 70%);
-      top: 40%; left: 55%;
-      animation-duration: 18s;
-      animation-delay: -14s;
-      animation-direction: alternate-reverse;
-    }
-
-    /* Breathing pulse on the whole scene */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background: radial-gradient(ellipse at 50% 40%, rgba(108, 92, 231, 0.025) 0%, transparent 60%);
-      animation: breathe 6s ease-in-out infinite;
-      pointer-events: none;
-      z-index: 0;
-    }
-    @keyframes orbDrift {
-      0%   { transform: translate(0px, 0px) scale(1); }
-      25%  { transform: translate(30px, -20px) scale(1.05); }
-      50%  { transform: translate(-15px, 25px) scale(0.97); }
-      75%  { transform: translate(20px, 15px) scale(1.03); }
-      100% { transform: translate(-10px, -20px) scale(1); }
-    }
-    @keyframes breathe {
-      0%, 100% { opacity: 0.6; transform: scale(1); }
-      50%       { opacity: 1;   transform: scale(1.08); }
-    }
-
-    /* ── All content above orbs ── */
-    .logo, .subtitle, #heroBtn, #result-stage, #sim-demo-card,
-    .panel-wrapper, #live-log, .footer {
-      position: relative;
-      z-index: 1;
-    }
-
-    /* ── Header ── */
-    .logo {
-      font-size: 2.8rem;
-      margin-bottom: 0.5rem;
-      color: var(--purple-deep);
-      font-weight: 800;
-      letter-spacing: -0.5px;
-    }
-    .badge-alpha {
-      display: inline-block;
-      background: linear-gradient(135deg, #6c5ce7, #a29bfe);
-      color: white;
-      font-size: 0.62rem;
-      font-weight: 700;
-      letter-spacing: 1.8px;
-      text-transform: uppercase;
-      padding: 0.22rem 0.65rem;
-      border-radius: 4px;
-      vertical-align: middle;
-      margin-left: 0.6rem;
-    }
-    .subtitle {
-      font-size: 1rem;
-      color: var(--text-muted);
-      margin-bottom: 3.5rem;
-      letter-spacing: 0.2px;
-    }
-
-    /* ── Hero Button ── */
-    #heroBtn {
-      background: linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #6c5ce7 100%);
-      background-size: 200% 200%;
-      color: white;
-      border: none;
-      padding: 1.15rem 3.8rem;
-      border-radius: 60px;
-      font-size: 1.2rem;
-      font-weight: 700;
-      cursor: pointer;
-      box-shadow:
-        0 0 0 1px rgba(168,85,247,0.3),
-        0 8px 32px rgba(124, 58, 237, 0.45),
-        0 0 60px rgba(124, 58, 237, 0.15);
-      transition: transform 0.15s, box-shadow 0.15s;
-      margin-bottom: 3rem;
-      letter-spacing: 0.3px;
-      animation: btnShimmer 4s ease-in-out infinite;
-    }
-    @keyframes btnShimmer {
-      0%, 100% { background-position: 0% 50%; }
-      50%       { background-position: 100% 50%; }
-    }
-    #heroBtn:hover:not(:disabled) {
-      transform: translateY(-3px) scale(1.02);
-      box-shadow:
-        0 0 0 1px rgba(168,85,247,0.5),
-        0 14px 50px rgba(124, 58, 237, 0.65),
-        0 0 90px rgba(124, 58, 237, 0.25);
-    }
-    #heroBtn:active:not(:disabled) { transform: scale(0.97); }
-    #heroBtn:disabled { opacity: 0.55; cursor: not-allowed; animation: none; }
-
-    /* ── Panels wrapper ── */
-    .panel-wrapper {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.9rem;
-      max-width: 680px;
-      width: 100%;
-      margin-bottom: 1.25rem;
-    }
-    .panel {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 1rem 1.2rem;
-      backdrop-filter: blur(12px);
-    }
-    .panel-title {
-      font-size: 0.65rem;
-      font-weight: 700;
-      letter-spacing: 2.5px;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      margin-bottom: 0.7rem;
+    /* ── Top Nav ── */
+    .nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      height: 56px;
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      font-family: 'Inter', sans-serif;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
-    .panel-dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: var(--text-muted);
-      flex-shrink: 0;
-    }
-    .panel-title.active { color: var(--purple-deep); }
-    .panel-title.active .panel-dot {
-      background: var(--purple-deep);
-      box-shadow: 0 0 8px var(--purple-deep);
-      animation: dotPulse 1.2s ease-in-out infinite;
-    }
-    @keyframes dotPulse {
-      0%, 100% { box-shadow: 0 0 4px var(--purple-deep); }
-      50%       { box-shadow: 0 0 14px var(--purple-deep), 0 0 24px rgba(108,92,231,0.4); }
-    }
-
-    /* ── Webhook Monitor ── */
-    #webhook-lines {
-      font-family: 'Courier New', Courier, monospace;
-      font-size: 0.7rem;
-      line-height: 1.75;
-      min-height: 64px;
-    }
-    .wh-line { display: flex; gap: 0.5rem; align-items: flex-start; }
-    .wh-ts   { color: rgba(42,42,80,1); min-width: 52px; flex-shrink: 0; }
-    .wh-tag  { min-width: 32px; flex-shrink: 0; font-weight: 700; font-size: 0.65rem; }
-    .wh-tag.ok   { color: #2ecc71; }
-    .wh-tag.wait { color: #f39c12; }
-    .wh-tag.ai   { color: #c084fc; }
-    .wh-tag.done { color: #a29bfe; }
-    .wh-tag.err  { color: #e74c3c; }
-    .wh-msg { color: #5050800; word-break: break-word; line-height: 1.6; }
-    .wh-msg.ok   { color: #4ade80; }
-    .wh-msg.ai   { color: #c084fc; }
-    .wh-msg.done { color: #a29bfe; font-weight: 700; }
-    .wh-msg.err  { color: #f87171; }
-
-    /* ── AI Reasoning ── */
-    #reasoning-text {
-      font-family: 'Courier New', Courier, monospace;
-      font-size: 0.73rem;
-      line-height: 1.85;
-      min-height: 64px;
-    }
-    .rs-block { margin-bottom: 0.25rem; }
-    .rs-prefix { color: rgba(58,58,106,1); }
-    .rs-text   { color: #7878bb; }
-    .rs-text.done { color: var(--purple-deep); font-weight: 600; }
-    .rs-cursor {
-      display: inline-block;
-      width: 6px; height: 12px;
-      background: var(--purple-deep);
-      margin-left: 1px;
-      vertical-align: text-bottom;
-      animation: cursorBlink 0.7s step-end infinite;
-    }
-    @keyframes cursorBlink {
-      0%, 100% { opacity: 1; } 50% { opacity: 0; }
-    }
-
-    /* ── Result Stage ── */
-    #result-stage {
-      max-width: 680px;
-      width: 100%;
-      display: none;
-      margin-bottom: 2rem;
-    }
-
-    /* ── Result header with emotional copy ── */
-    .result-header {
+    .nav-brand {
       display: flex;
       align-items: center;
       gap: 0.6rem;
-      margin-bottom: 1rem;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.2px;
     }
-    .result-pulse {
+    .nav-brand svg { color: var(--accent); }
+    .nav-badge {
+      font-size: 0.65rem;
+      font-weight: 600;
+      background: var(--accent-light);
+      color: var(--accent);
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      letter-spacing: 0.3px;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    .nav-link {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-decoration: none;
+      padding: 0.4rem 0.75rem;
+      border-radius: 6px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .nav-link:hover { background: var(--bg); color: var(--text); }
+    .nav-link.active { color: var(--accent); }
+
+    /* ── Page Container ── */
+    .page {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+
+    /* ── Page Header ── */
+    .page-header { margin-bottom: 2rem; }
+    .page-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.3px;
+      line-height: 1.3;
+    }
+    .page-subtitle {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-top: 0.35rem;
+    }
+
+    /* ── Status Bar ── */
+    .status-bar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem 1.25rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .status-dot {
       width: 8px; height: 8px;
       border-radius: 50%;
-      background: var(--purple-deep);
-      box-shadow: 0 0 12px var(--purple-deep);
-      animation: dotPulse 2s ease-in-out infinite;
+      background: var(--success);
       flex-shrink: 0;
     }
-    .result-label {
-      font-size: 0.7rem;
-      font-weight: 600;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: var(--text-muted);
+    .status-dot.pulse {
+      animation: statusPulse 2s ease-in-out infinite;
     }
-    .emotional-copy {
-      font-size: 0.78rem;
+    @keyframes statusPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .status-text {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .status-text strong { color: var(--success); }
+    .status-meta {
+      margin-left: auto;
+      font-size: 0.75rem;
       color: var(--text-sub);
-      margin-bottom: 1rem;
-      font-style: italic;
-      min-height: 1.2em;
-      letter-spacing: 0.2px;
     }
 
-    /* ── Order meta card ── */
-    .order-meta {
-      background: var(--card-bg);
+    /* ── Primary Action ── */
+    .action-card {
+      background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 0.9rem 1.3rem;
-      margin-bottom: 1rem;
-      backdrop-filter: blur(12px);
+      padding: 1.75rem;
+      margin-bottom: 1.5rem;
+      text-align: center;
     }
-    .order-meta-row {
-      display: flex;
-      align-items: baseline;
-      gap: 0.5rem;
+    .action-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text);
       margin-bottom: 0.4rem;
     }
-    .order-meta-row:last-child { margin-bottom: 0; }
-    .order-meta-label {
-      font-size: 0.7rem;
-      font-weight: 700;
-      color: var(--purple-deep);
-      text-transform: uppercase;
-      letter-spacing: 1.2px;
-      min-width: 52px;
-    }
-    .order-meta-value { font-size: 0.88rem; color: var(--text-primary); }
-    .order-meta-note {
-      font-style: italic;
-      color: #c084fc;
-      background: rgba(124, 58, 237, 0.07);
-      padding: 0.25rem 0.65rem;
-      border-radius: 6px;
-      border-left: 3px solid var(--purple-deep);
-      margin-top: 0.45rem;
+    .action-desc {
       font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 1.25rem;
+    }
+    #heroBtn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 0.85rem 2.5rem;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+      box-shadow: 0 1px 3px rgba(92,106,196,0.3);
+    }
+    #heroBtn:hover:not(:disabled) {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(92,106,196,0.35);
+    }
+    #heroBtn:active:not(:disabled) { transform: translateY(0); }
+    #heroBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* ── Result Stage ── */
+    #result-stage { display: none; margin-bottom: 1.5rem; }
+
+    .result-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+    .result-card-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .result-card-icon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: var(--accent-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+    .result-card-title {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .result-card-sub { font-size: 0.75rem; color: var(--text-sub); }
+    .result-card-body { padding: 1.25rem; }
+
+    /* Order Info */
+    .order-info {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .order-field {}
+    .order-field-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-sub);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.2rem;
+    }
+    .order-field-value {
+      font-size: 0.88rem;
+      color: var(--text);
+      font-weight: 500;
+    }
+    .order-note {
+      background: #fffbf0;
+      border: 1px solid #f5e6b8;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      margin-top: 0.75rem;
+      font-size: 0.85rem;
+      color: #7a6020;
       line-height: 1.5;
     }
+    .order-note-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.3rem;
+      color: #b8912a;
+    }
 
-    /* ── Tags: explosive burst from button center ── */
+    /* Tags */
+    .result-section-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-sub);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.65rem;
+    }
     #tags-stage {
       display: flex;
-      gap: 0.65rem;
+      gap: 0.5rem;
       flex-wrap: wrap;
-      justify-content: center;
-      min-height: 58px;
-      margin-bottom: 1.2rem;
+      margin-bottom: 1rem;
     }
-
-    /* Each tag starts hidden; JS adds .tag-active */
     .tag {
-      padding: 0.55rem 1.3rem;
-      border-radius: 50px;
-      font-weight: 700;
-      font-size: 0.92rem;
-      color: white;
-      letter-spacing: 0.4px;
+      display: inline-flex;
+      align-items: center;
+      padding: 0.35rem 0.85rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
       opacity: 0;
-      transform: scale(0) translateY(0);
-      pointer-events: none;
+      transform: translateY(6px);
     }
     .tag.tag-active {
-      animation: tagFlyOut var(--tag-dur, 0.55s) cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      animation: tagSlideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
     }
-
-    /* Glow halo behind each tag during animation */
-    .tag::before {
-      content: '';
-      position: absolute;
-      inset: -4px;
-      border-radius: inherit;
-      background: inherit;
-      filter: blur(10px);
-      opacity: 0;
-      transition: opacity 0.2s;
+    @keyframes tagSlideUp {
+      to { opacity: 1; transform: translateY(0); }
     }
-    .tag.tag-active::before { opacity: 0.5; }
+    .tag.urgent    { background: var(--danger-bg); color: var(--danger); border: 1px solid #f5c3c3; }
+    .tag.gift      { background: var(--warning-bg); color: var(--warning); border: 1px solid #f5e0b0; }
+    .tag.fragile   { background: var(--info-bg);   color: var(--info);   border: 1px solid #c2e0fa; }
+    .tag.no-receipt{ background: var(--success-bg); color: var(--success); border: 1px solid #b8e0c0; }
+    .tag.swap      { background: #f5e8ff; color: #7c3aed; border: 1px solid #e0c8ff; }
+    .tag.no-action { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); }
+    .tag.default-tag { background: var(--accent-light); color: var(--accent); border: 1px solid #d0d7f5; }
 
-    .tag.urgent     { background: linear-gradient(135deg, #e74c3c, #c0392b); }
-    .tag.gift       { background: linear-gradient(135deg, #f39c12, #e67e22); }
-    .tag.fragile    { background: linear-gradient(135deg, #3498db, #2980b9); }
-    .tag.no-receipt { background: linear-gradient(135deg, #2ecc71, #27ae60); }
-    .tag.swap       { background: linear-gradient(135deg, #9b59b6, #8e44ad); }
-    .tag.no-action  { background: linear-gradient(135deg, #6c5ce7, #5a4fcf); }
-    .tag.default-tag{ background: linear-gradient(135deg, #6c5ce7, #5a4fcf); }
-
-    @keyframes tagFlyOut {
-      0%   { opacity: 0;   transform: scale(0.3) translateY(0px); filter: blur(4px); }
-      35%  { opacity: 1;   transform: scale(1.1) translateY(-8px); filter: blur(0px); }
-      65%  { opacity: 0.9; transform: scale(0.92) translateY(2px); }
-      100% { opacity: 1;   transform: scale(1) translateY(0px); }
-    }
-
-    /* ── Urgency + Summary ── */
+    /* Urgency + Summary */
     .urgency-summary {
       display: grid;
       grid-template-columns: auto 1fr;
-      gap: 0.9rem;
+      gap: 0.75rem;
       align-items: start;
     }
     .urgency-pill {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem 0.9rem;
-      border-radius: 50px;
-      font-size: 0.82rem;
+      gap: 0.4rem;
+      padding: 0.4rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.78rem;
       font-weight: 700;
-      letter-spacing: 0.6px;
-      white-space: nowrap;
-      border: 1px solid transparent;
-      transition: all 0.4s ease;
-    }
-    .urgency-pill.high   { background: rgba(231,76,60,0.12); color: #ff6b6b; border-color: rgba(231,76,60,0.35); }
-    .urgency-pill.normal { background: rgba(46,204,113,0.1); color: #2ecc71; border-color: rgba(46,204,113,0.3); }
-    .urgency-pill.low    { background: rgba(243,156,18,0.1); color: #f39c12; border-color: rgba(243,156,18,0.3); }
-    .urgency-dot { width: 7px; height: 7px; border-radius: 50%; }
-    .urgency-pill.high   .urgency-dot { background: #e74c3c; box-shadow: 0 0 8px #e74c3c; animation: glowPulse 1.5s ease-in-out infinite; }
-    .urgency-pill.normal .urgency-dot { background: #2ecc71; box-shadow: 0 0 8px #2ecc71; animation: glowPulse 2s ease-in-out infinite; }
-    .urgency-pill.low    .urgency-dot { background: #f39c12; }
-    @keyframes glowPulse {
-      0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
-    }
-
-    .summary-card {
-      background: rgba(108, 92, 231, 0.06);
-      border: 1px solid rgba(108, 92, 231, 0.25);
-      border-radius: 10px;
-      padding: 0.7rem 1rem;
-      font-size: 0.86rem;
-      color: #b8a8ff;
-      line-height: 1.65;
-    }
-    .summary-card strong { color: #a29bfe; }
-
-    /* ── Simulated demo card ── */
-    #sim-demo-card {
-      max-width: 680px;
-      width: 100%;
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 1.5rem 1.75rem;
-      margin-bottom: 1.25rem;
-      backdrop-filter: blur(12px);
-    }
-    .card-title {
-      font-size: 0.88rem;
-      font-weight: 700;
-      color: var(--text-primary);
-      margin: 0 0 0.6rem;
       letter-spacing: 0.3px;
+      white-space: nowrap;
     }
-    .note-box {
-      background: rgba(45, 45, 68, 0.7);
-      padding: 0.85rem 1.1rem;
+    .urgency-pill.high   { background: var(--danger-bg); color: var(--danger); border: 1px solid #f5c3c3; }
+    .urgency-pill.normal { background: var(--success-bg); color: var(--success); border: 1px solid #b8e0c0; }
+    .urgency-pill.low    { background: var(--warning-bg); color: var(--warning); border: 1px solid #f5e0b0; }
+    .urgency-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+    .summary-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
       border-radius: 8px;
-      border-left: 4px solid #9b59b6;
-      margin-bottom: 1rem;
-      font-size: 0.86rem;
-      color: #bbb;
-      line-height: 1.5;
-    }
-    .note-box span { color: #ff7675; font-weight: 600; }
-    #runDemo {
-      background: #9b59b6;
-      color: white;
-      border: none;
-      padding: 0.72rem 1.7rem;
-      border-radius: 50px;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      box-shadow: 0 4px 14px rgba(155,89,182,0.3);
-      transition: transform 0.15s, box-shadow 0.15s;
-    }
-    #runDemo:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(155,89,182,0.5); }
-    #sim-tags { display: flex; gap: 0.65rem; flex-wrap: wrap; justify-content: center; min-height: 46px; margin: 0.85rem 0 0.5rem; }
-    #sim-summary {
-      display: none;
-      background: rgba(39, 174, 96, 0.1);
-      border: 1px solid rgba(39,174,96,0.3);
-      color: #a8e6cf;
-      padding: 0.65rem 1rem;
-      border-radius: 8px;
-      font-size: 0.83rem;
+      padding: 0.7rem 1rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.6;
     }
 
-    /* ── Divider ── */
-    .divider {
-      max-width: 680px; width: 100%;
-      border: none;
-      border-top: 1px solid rgba(30,30,56,0.6);
-      margin: 0.5rem 0 1.25rem;
+    /* ── Monitor Panels ── */
+    .panel-wrapper {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
     }
-
-    /* ── Live Log ── */
-    #live-log {
-      max-width: 680px; width: 100%;
-      background: var(--card-bg);
+    .panel {
+      background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 0.75rem 1.2rem;
-      font-family: 'Courier New', Courier, monospace;
-      font-size: 0.75rem;
-      line-height: 1.85;
+      overflow: hidden;
+    }
+    .panel-header {
+      padding: 0.85rem 1.1rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .panel-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .panel-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--text-sub);
+      flex-shrink: 0;
+    }
+    .panel-title.active { color: var(--accent); }
+    .panel-title.active .panel-dot {
+      background: var(--accent);
+      animation: dotPulse 1.5s ease-in-out infinite;
+    }
+    @keyframes dotPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(92,106,196,0.4); }
+      50% { box-shadow: 0 0 0 5px rgba(92,106,196,0); }
+    }
+    .panel-body {
+      padding: 0.9rem 1.1rem;
+      min-height: 80px;
+    }
+    #webhook-lines, #reasoning-text {
+      font-size: 0.8rem;
+      line-height: 1.7;
+      color: var(--text-muted);
+    }
+    .wh-line, .rs-block { margin-bottom: 0.35rem; }
+    .wh-tag, .rs-prefix {
+      font-weight: 700;
+      font-size: 0.68rem;
+      letter-spacing: 0.3px;
+      margin-right: 0.3rem;
+    }
+    .wh-tag.ok    { color: var(--success); }
+    .wh-tag.wait  { color: var(--warning); }
+    .wh-tag.ai    { color: var(--accent); }
+    .wh-tag.done  { color: #7c3aed; }
+    .wh-tag.err   { color: var(--danger); }
+    .rs-prefix { color: var(--text-sub); }
+    .rs-text { color: var(--text-muted); }
+    .rs-text.done { color: var(--accent); font-weight: 600; }
+    .rs-cursor {
+      display: inline-block;
+      width: 5px; height: 11px;
+      background: var(--accent);
+      vertical-align: text-bottom;
+      animation: blink 0.7s step-end infinite;
+    }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    .placeholder {
+      font-size: 0.8rem;
+      color: var(--text-sub);
+      font-style: italic;
+    }
+
+    /* ── Simulated Demo ── */
+    .demo-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .demo-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    .demo-card-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .demo-card-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.2rem;
+    }
+    #runDemo {
+      background: white;
+      color: var(--accent);
+      border: 1.5px solid var(--accent);
+      padding: 0.5rem 1.2rem;
+      border-radius: 7px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s, color 0.15s;
+      flex-shrink: 0;
+    }
+    #runDemo:hover { background: var(--accent); color: white; }
+    .demo-note {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 0.7rem 1rem;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+    .demo-note span { color: var(--text); font-weight: 500; font-style: italic; }
+    #sim-tags { display: flex; gap: 0.5rem; flex-wrap: wrap; min-height: 34px; margin-bottom: 0.75rem; }
+    #sim-summary {
       display: none;
-      backdrop-filter: blur(12px);
+      background: var(--success-bg);
+      border: 1px solid #b8e0c0;
+      border-radius: 7px;
+      padding: 0.6rem 1rem;
+      font-size: 0.82rem;
+      color: var(--success);
+      font-weight: 500;
+    }
+
+    /* ── Execution Log ── */
+    #live-log {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      font-size: 0.78rem;
+      line-height: 1.8;
+      display: none;
+      margin-bottom: 2rem;
     }
     #live-log-title {
-      font-size: 0.65rem;
+      font-size: 0.72rem;
       font-weight: 700;
-      letter-spacing: 2.5px;
+      color: var(--text-sub);
       text-transform: uppercase;
-      color: var(--text-muted);
-      margin-bottom: 0.4rem;
-      font-family: 'Inter', sans-serif;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.5rem;
     }
-    .log-line { display: flex; gap: 0.7rem; }
-    .log-ts    { color: rgba(42,42,80,1); min-width: 52px; }
-    .log-arrow { color: rgba(61,61,106,1); }
-    .log-msg   { color: #6060a0; }
-    .log-msg.ok   { color: #2ecc71; }
-    .log-msg.err  { color: #e74c3c; }
-    .log-msg.ai   { color: #c084fc; }
-    .log-msg.hi   { color: #a29bfe; font-weight: 700; }
+    .log-line { display: flex; gap: 0.5rem; }
+    .log-ts   { color: var(--text-sub); min-width: 68px; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+    .log-arrow { color: var(--border-hover); }
+    .log-msg   { color: var(--text-muted); word-break: break-word; }
+    .log-msg.ok  { color: var(--success); }
+    .log-msg.err { color: var(--danger); }
+    .log-msg.ai  { color: var(--accent); }
+    .log-msg.hi  { color: var(--text); font-weight: 600; }
 
     /* ── Footer ── */
     .footer {
-      margin-top: 3.5rem;
-      color: #2a2a3a;
-      font-size: 0.78rem;
       text-align: center;
-      letter-spacing: 0.2px;
+      font-size: 0.78rem;
+      color: var(--text-sub);
+      padding: 2rem 0 1rem;
+      border-top: 1px solid var(--border);
     }
-    .footer a { color: #6c5ce7; text-decoration: none; font-weight: 600; }
+    .footer a { color: var(--accent); text-decoration: none; font-weight: 500; }
+    .footer a:hover { text-decoration: underline; }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      .panel-wrapper { grid-template-columns: 1fr; }
+      .nav-links { display: none; }
+      .page { padding: 1.5rem 1rem 3rem; }
+    }
   </style>
 </head>
 <body>
 
-  <!-- Ambient orbs -->
-  <div class="orb orb-1"></div>
-  <div class="orb orb-2"></div>
-  <div class="orb orb-3"></div>
+  <!-- ── Navigation ── -->
+  <nav class="nav">
+    <div class="nav-brand">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+        <path d="M2 17l10 5 10-5"/>
+        <path d="M2 12l10 5 10-5"/>
+      </svg>
+      AfterFlow AI
+      <span class="nav-badge">BETA</span>
+    </div>
+    <div class="nav-links">
+      <a href="#" class="nav-link active">Dashboard</a>
+      <a href="#" class="nav-link">Orders</a>
+      <a href="#" class="nav-link">Settings</a>
+    </div>
+  </nav>
 
-  <div class="logo">AfterFlow AI <span class="badge-alpha">Alpha</span></div>
-  <div class="subtitle">Autonomous order intelligence &mdash; powered by DeepSeek</div>
+  <!-- ── Page ── -->
+  <main class="page">
 
-  <!-- Hero Button -->
-  <button id="heroBtn">Analyze Live Order</button>
-
-  <!-- Result Stage -->
-  <div id="result-stage">
-
-    <div class="result-header">
-      <div class="result-pulse"></div>
-      <span class="result-label">Order Note Parsed</span>
+    <!-- Header -->
+    <div class="page-header">
+      <div class="page-title">Order Intelligence</div>
+      <div class="page-subtitle">AI-powered order note analysis &mdash; powered by DeepSeek</div>
     </div>
 
-    <div class="emotional-copy" id="emotional-copy">
-      AI is understanding your customer&apos;s heart...
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <div class="status-dot pulse"></div>
+      <div class="status-text"><strong>Live</strong> &mdash; Listening for Shopify webhook events</div>
+      <div class="status-meta">v1.0 &middot; DeepSeek model</div>
     </div>
 
-    <div class="order-meta">
-      <div class="order-meta-row">
-        <span class="order-meta-label">Order</span>
-        <span class="order-meta-value" id="res-order-name">—</span>
+    <!-- Primary Action -->
+    <div class="action-card">
+      <div class="action-title">Analyze a live order from your Shopify store</div>
+      <div class="action-desc">Fetches the most recent order with a customer note and runs AI analysis</div>
+      <button id="heroBtn">Analyze Latest Order</button>
+    </div>
+
+    <!-- Result Stage (hidden until analysis) -->
+    <div id="result-stage">
+
+      <!-- Order Card -->
+      <div class="result-card">
+        <div class="result-card-header">
+          <div class="result-card-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <path d="M16 10a4 4 0 01-8 0"/>
+            </svg>
+          </div>
+          <div>
+            <div class="result-card-title">Order Analyzed</div>
+            <div class="result-card-sub">Shopify order data &amp; AI analysis result</div>
+          </div>
+        </div>
+        <div class="result-card-body">
+          <div class="order-info">
+            <div class="order-field">
+              <div class="order-field-label">Order</div>
+              <div class="order-field-value" id="res-order-name">&mdash;</div>
+            </div>
+            <div class="order-field">
+              <div class="order-field-label">Payment</div>
+              <div class="order-field-value" id="res-financial-status">&mdash;</div>
+            </div>
+            <div class="order-field">
+              <div class="order-field-label">Fulfillment</div>
+              <div class="order-field-value" id="res-fulfillment-status">&mdash;</div>
+            </div>
+          </div>
+          <div id="res-note-row" style="display:none;">
+            <div class="order-note">
+              <div class="order-note-label">Customer Note</div>
+              <span id="res-order-note"></span>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="order-meta-row">
-        <span class="order-meta-label">Status</span>
-        <span class="order-meta-value" id="res-financial-status">—</span>
+
+      <!-- AI Tags -->
+      <div class="result-card">
+        <div class="result-card-header">
+          <div class="result-card-icon" style="background:#f5e8ff;color:#7c3aed;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+          <div>
+            <div class="result-card-title">AI Tags</div>
+            <div class="result-card-sub">Automatically generated order tags</div>
+          </div>
+        </div>
+        <div class="result-card-body">
+          <div class="result-section-label">Suggested Tags</div>
+          <div id="tags-stage"></div>
+        </div>
       </div>
-      <div class="order-meta-row" id="res-note-row" style="display:none;">
-        <span class="order-meta-label">Note</span>
-        <div style="flex:1;">
-          <div class="order-meta-note" id="res-order-note">—</div>
+
+      <!-- Urgency + Summary -->
+      <div class="result-card">
+        <div class="result-card-header">
+          <div class="result-card-icon" style="background:#fff4e5;color:#cc7c00;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+            </svg>
+          </div>
+          <div>
+            <div class="result-card-title">AI Assessment</div>
+            <div class="result-card-sub">Urgency level &amp; reasoning summary</div>
+          </div>
+        </div>
+        <div class="result-card-body">
+          <div class="urgency-summary">
+            <div class="urgency-pill" id="urgency-pill">
+              <div class="urgency-dot"></div>
+              <span id="urgency-label">&mdash;</span>
+            </div>
+            <div class="summary-card" id="summary-text">Waiting for analysis...</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /result-stage -->
+
+    <!-- Monitor Panels -->
+    <div class="panel-wrapper">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title" id="webhook-panel-title">
+            <div class="panel-dot"></div>
+            Webhook Monitor
+          </div>
+        </div>
+        <div class="panel-body">
+          <div id="webhook-lines"><div class="placeholder">Waiting for incoming orders...</div></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title" id="reasoning-panel-title">
+            <div class="panel-dot"></div>
+            AI Reasoning
+          </div>
+        </div>
+        <div class="panel-body">
+          <div id="reasoning-text"><div class="placeholder">Ready to analyze orders.</div></div>
         </div>
       </div>
     </div>
 
-    <div id="tags-stage"></div>
-
-    <div class="urgency-summary" id="urgency-summary-row" style="display:none;">
-      <div class="urgency-pill" id="urgency-pill">
-        <span class="urgency-dot"></span>
-        <span id="urgency-label">—</span>
+    <!-- Simulated Demo -->
+    <div class="demo-card">
+      <div class="demo-card-header">
+        <div>
+          <div class="demo-card-title">Quick Demo</div>
+          <div class="demo-card-desc">Try it instantly without connecting Shopify</div>
+        </div>
+        <button id="runDemo">Run Demo</button>
       </div>
-      <div class="summary-card">
-        <strong>AI Summary:</strong> <span id="summary-text">—</span>
+      <div class="demo-note">
+        Sample customer note: <span>"Red L, no red cancel, gift packaging please"</span>
       </div>
+      <div id="sim-tags"></div>
+      <div id="sim-summary">AI parsed &mdash; Urgency: High &middot; Tags: Urgent, Gift, Fragile</div>
     </div>
 
-  </div>
-
-  <!-- Panels: Webhook Monitor + AI Reasoning -->
-  <div class="panel-wrapper">
-    <div class="panel" id="webhook-panel">
-      <div class="panel-title" id="webhook-panel-title">
-        <span class="panel-dot"></span>Live Webhook Monitor
-      </div>
-      <div id="webhook-lines">
-        <div style="color:#2a2a50;font-family:'Courier New',monospace;font-size:0.7rem;line-height:1.75;">Waiting for trigger...</div>
-      </div>
+    <!-- Live Log -->
+    <div id="live-log">
+      <div id="live-log-title">Execution Log</div>
+      <div id="log-lines"></div>
     </div>
-    <div class="panel" id="reasoning-panel">
-      <div class="panel-title" id="reasoning-panel-title">
-        <span class="panel-dot"></span>AI Reasoning Trace
-      </div>
-      <div id="reasoning-text">
-        <div style="color:#2a2a50;font-family:'Courier New',monospace;font-size:0.73rem;line-height:1.85;">Ready to analyze...</div>
-      </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      AfterFlow AI &middot; Order Intelligence &middot; Powered by DeepSeek<br>
+      <a href="https://x.com/JustinXai" target="_blank">@JustinXai</a>
     </div>
-  </div>
 
-  <!-- Simulated Demo -->
-  <div id="sim-demo-card">
-    <div class="card-title">Compare: Simulated Demo</div>
-    <div class="note-box">
-      Customer note: <span>"Red L, no red cancel, gift packaging please"</span>
-    </div>
-    <button id="runDemo">Run Simulated Demo</button>
-    <div id="sim-tags"></div>
-    <div id="sim-summary">AI parsed &mdash; urgency: high &middot; tags: Urgent, Gift</div>
-  </div>
+  </main>
 
-  <hr class="divider">
-
-  <!-- Live Log -->
-  <div id="live-log">
-    <div id="live-log-title">▸ Live Execution Log</div>
-    <div id="log-lines"></div>
-  </div>
-
-  <div class="footer">
-    Building in public &middot; Follow <a href="https://x.com/JustinXai" target="_blank">@JustinXai</a> &middot; V1: $19/mo
-  </div>
-
-  <!-- ═══════════════════════════════════════════════════════════════
+  <!-- ═══════════════════════════════════════════════════════════════════
        SCRIPTS
-  ═════════════════════════════════════════════════════════════════ -->
+  ═════════════════════════════════════════════════════════════════════ -->
   <script>
-    // ─── Apple Pay-style Pop Sound ─────────────────────────────────────────────
-    (function() {
-      var ctx = null;
-      function getCtx() {
-        if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
-        return ctx;
-      }
-      window.playPop = function(intensity) {
-        intensity = intensity || 0.5;
-        try {
-          var ac = getCtx();
-          if (ac.state === 'suspended') ac.resume();
-
-          var osc  = ac.createOscillator();
-          var gain = ac.createGain();
-
-          // Primary tone: short sine burst (Apple Pay vibe)
-          osc.connect(gain);
-          gain.connect(ac.destination);
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(1100, ac.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(550, ac.currentTime + 0.08);
-
-          gain.gain.setValueAtTime(0.18 * intensity, ac.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.12);
-
-          osc.start(ac.currentTime);
-          osc.stop(ac.currentTime + 0.13);
-
-          // Subtle harmonic layer for depth
-          var osc2  = ac.createOscillator();
-          var gain2 = ac.createGain();
-          osc2.connect(gain2);
-          gain2.connect(ac.destination);
-          osc2.type = 'sine';
-          osc2.frequency.setValueAtTime(2200, ac.currentTime);
-          osc2.frequency.exponentialRampToValueAtTime(1100, ac.currentTime + 0.06);
-          gain2.gain.setValueAtTime(0.06 * intensity, ac.currentTime);
-          gain2.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.07);
-          osc2.start(ac.currentTime);
-          osc2.stop(ac.currentTime + 0.08);
-        } catch(e) {
-          // Silently fail if AudioContext blocked
-        }
-      };
-    })();
-
     // ─── Utilities ──────────────────────────────────────────────────────────────
     function sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
     function ts() {
@@ -682,27 +730,28 @@
       d.className = 'log-line';
       d.innerHTML =
         '<span class="log-ts">' + ts() + '</span>' +
-        '<span class="log-arrow">▸</span>' +
+        '<span class="log-arrow">&rsaquo;</span>' +
         '<span class="log-msg ' + (type||'') + '">' + msg + '</span>';
       el.appendChild(d);
-      document.getElementById('live-log').scrollTop = 1e9;
+      el.parentElement.scrollTop = 1e9;
     }
 
     // ─── Webhook Monitor ────────────────────────────────────────────────────────
-    function clearWebhook() { document.getElementById('webhook-lines').innerHTML = ''; }
+    function clearWebhook() {
+      document.getElementById('webhook-lines').innerHTML = '';
+    }
     function pushWebhook(tag, msg) {
       var lines = document.getElementById('webhook-lines');
       var d = document.createElement('div');
       d.className = 'wh-line';
       d.innerHTML =
-        '<span class="wh-ts">' + ts() + '</span>' +
-        '<span class="wh-tag ' + tag + '">[' + tag.toUpperCase() + ']</span>' +
-        '<span class="wh-msg ' + tag + '">' + msg + '</span>';
+        '<span class="wh-tag ' + tag + '">' + tag.toUpperCase() + '</span>' +
+        '<span>' + msg + '</span>';
       lines.appendChild(d);
       lines.parentElement.scrollTop = 1e9;
     }
 
-    // ─── AI Reasoning (typewriter) ─────────────────────────────────────────────
+    // ─── AI Reasoning ───────────────────────────────────────────────────────────
     var reasonQueue = [], reasonTimer = null;
     function clearReasoning() {
       reasonQueue = []; clearTimeout(reasonTimer);
@@ -738,76 +787,41 @@
       function typeChar() {
         if (i < step.text.length) {
           textSpan.textContent += step.text[i++];
-          reasonTimer = setTimeout(typeChar, step.speed || 26);
+          reasonTimer = setTimeout(typeChar, step.speed || 22);
         } else {
           textSpan.className = 'rs-text done';
           cursor.remove();
-          reasonTimer = setTimeout(renderNextReasoning, step.pause || 160);
+          reasonTimer = setTimeout(renderNextReasoning, step.pause || 180);
         }
       }
-      reasonTimer = setTimeout(typeChar, 80);
+      reasonTimer = setTimeout(typeChar, 60);
     }
 
-    // ─── Tags: explosive burst from button center ───────────────────────────────
+    // ─── Tags ───────────────────────────────────────────────────────────────────
     function renderTags(tags, containerId) {
       var el = document.getElementById(containerId);
       el.innerHTML = '';
       var known = ['urgent','gift','fragile','no-receipt','swap','no-action'];
-
-      // Position the tags in a fan pattern: spread from center outward
-      var positions = computeFanPositions(tags.length);
 
       tags.forEach(function(tag, i) {
         var span = document.createElement('span');
         var tc = tag.toLowerCase().replace(/[^a-z0-9-]/g, '-');
         span.className = 'tag ' + (known.indexOf(tc) !== -1 ? tc : 'default-tag');
         span.textContent = tag;
-
-        var pos = positions[i];
-        var dur = (0.4 + Math.random() * 0.2).toFixed(2);
-        span.style.setProperty('--tag-dur', dur + 's');
-
-        // Apply per-tag explosion offset
-        span.style.setProperty('--tx', pos.tx + 'px');
-        span.style.setProperty('--ty', pos.ty + 'px');
-        span.style.animationDelay = (pos.delay * 1000) + 'ms';
-
+        span.style.animationDelay = (i * 0.08) + 's';
         el.appendChild(span);
-
-        // Trigger animation after a tiny delay (allows DOM paint)
         setTimeout(function() { span.classList.add('tag-active'); }, 10);
       });
-    }
-
-    // Compute fan/spread positions radiating from center
-    function computeFanPositions(count) {
-      var positions = [];
-      var radius    = 55 + count * 12;
-      var angleStep = Math.PI / (count + 1); // fan in lower half-arc
-      var baseDelay = 0.15;
-
-      for (var i = 0; i < count; i++) {
-        var angle = -Math.PI / 2 + angleStep * (i + 1 - count / 2);
-        var r     = radius * (0.7 + Math.random() * 0.3);
-        positions.push({
-          tx:    Math.round(Math.cos(angle) * r),
-          ty:    Math.round(Math.sin(angle) * r),
-          delay: +(baseDelay + i * 0.08).toFixed(2),
-        });
-      }
-      return positions;
     }
 
     // ─── Simulated Demo ─────────────────────────────────────────────────────────
     var SIMULATED_TAGS = [
       { name: 'Urgent',    class: 'urgent',     delay: 0   },
-      { name: 'Gift',      class: 'gift',       delay: 180 },
-      { name: 'Fragile',   class: 'fragile',    delay: 360 },
-      { name: 'No-Receipt',class: 'no-receipt', delay: 540 },
+      { name: 'Gift',      class: 'gift',      delay: 150 },
+      { name: 'Fragile',   class: 'fragile',   delay: 300 },
     ];
 
     document.getElementById('runDemo').addEventListener('click', function() {
-      window.playPop(0.35);
       var simTags = document.getElementById('sim-tags');
       var simSum  = document.getElementById('sim-summary');
       simTags.innerHTML = '';
@@ -815,35 +829,22 @@
       SIMULATED_TAGS.forEach(function(tag) {
         setTimeout(function() {
           var s = document.createElement('span');
-          s.className = 'tag tag-active';
-          s.style.setProperty('--tag-dur', '0.55s');
-          s.style.setProperty('--tx', '0px');
-          s.style.setProperty('--ty', '-12px');
-          s.style.background = getComputedStyle(document.documentElement)
-            .getPropertyValue('--btn-' + tag.class) || '#9b59b6';
-          // Fallback color classes
-          s.classList.add(tag.class);
+          s.className = 'tag tag-active ' + tag.class;
           s.textContent = tag.name;
-          s.style.opacity = '1';
-          s.style.transform = 'scale(1) translateY(0)';
           simTags.appendChild(s);
         }, tag.delay);
       });
-      setTimeout(function() {
-        simSum.style.display = 'block';
-        window.playPop(0.25);
-      }, 900);
+      setTimeout(function() { simSum.style.display = 'block'; }, 800);
     });
 
-    // ─── Hero: Fetch Real Order & Analyze ───────────────────────────────────────
+    // ─── Hero: Fetch Order & Analyze ───────────────────────────────────────────
     document.getElementById('heroBtn').addEventListener('click', async function() {
       var btn       = document.getElementById('heroBtn');
       var resultEl  = document.getElementById('result-stage');
       var logEl     = document.getElementById('live-log');
-      var urgRow    = document.getElementById('urgency-summary-row');
       var tagsStage = document.getElementById('tags-stage');
       var whTitle   = document.getElementById('webhook-panel-title');
-      var ecopy     = document.getElementById('emotional-copy');
+      var urgRow    = document.getElementById('urgency-pill').parentElement.parentElement;
 
       btn.disabled = true;
       btn.textContent = 'Analyzing...';
@@ -855,15 +856,10 @@
 
       resultEl.style.display = 'none';
       tagsStage.innerHTML = '';
-      urgRow.style.display = 'none';
       document.getElementById('res-note-row').style.display = 'none';
-      ecopy.textContent = 'AI is understanding your customer\'s heart...';
-      ecopy.style.opacity = '0.6';
-
-      window.playPop(0.7);
 
       try {
-        // Phase 1: Shopify
+        // Phase 1: Fetch order
         pushLog('Connecting to Shopify Admin API...', '');
         pushWebhook('wait', 'Establishing connection...');
         await sleep(280);
@@ -871,58 +867,48 @@
         var latestRes  = await fetch('/api/latest-order');
         var latestData = await latestRes.json();
 
-        if (!latestRes.ok) {
-          throw new Error((latestData.error || 'Server error') + ' (HTTP ' + latestRes.status + ')');
-        }
+        if (!latestRes.ok) throw new Error((latestData.error || 'Server error') + ' (HTTP ' + latestRes.status + ')');
 
         var order = latestData.order;
         if (!order) {
           pushWebhook('err', 'No orders with customer notes found.');
-          pushLog('No note-bearing orders found.', 'err');
+          pushLog('No orders found.', 'err');
           whTitle.classList.remove('active');
           return;
         }
 
         pushWebhook('ok', 'Connection established.');
-        pushWebhook('ok', 'Incoming order from Shopify: ' + order.name);
-        pushLog('Connection established.', 'ok');
-        window.playPop(0.4);
-        await sleep(180);
-
-        pushWebhook('ok', 'Order verified: ' + order.name + ' | ' + (order.financialStatus || 'unknown'));
-        pushLog('Fetching latest note-bearing order...', '');
-        await sleep(220);
+        pushWebhook('ok', 'Order fetched: ' + order.name);
+        pushLog('Order fetched: ' + order.name, 'ok');
+        await sleep(200);
 
         resultEl.style.display = 'block';
         document.getElementById('res-order-name').textContent = order.name;
         document.getElementById('res-financial-status').textContent = order.financialStatus || '—';
+        document.getElementById('res-fulfillment-status').textContent = order.fulfillmentStatus || 'Unfulfilled';
 
         var noteToAnalyze = order.note;
         if (noteToAnalyze) {
-          document.getElementById('res-note-row').style.display = 'flex';
+          document.getElementById('res-note-row').style.display = 'block';
           document.getElementById('res-order-note').textContent = noteToAnalyze;
-          pushWebhook('ok', 'Note detected: "' + noteToAnalyze.slice(0, 65) + (noteToAnalyze.length > 65 ? '...' : '') + '"');
-          pushLog('Note detected: "' + noteToAnalyze.slice(0, 80) + (noteToAnalyze.length > 80 ? '...' : '') + '"', 'ok');
+          pushWebhook('ok', 'Note: "' + noteToAnalyze.slice(0, 60) + (noteToAnalyze.length > 60 ? '...' : '') + '"');
         } else {
           noteToAnalyze = '(no note)';
           pushWebhook('err', 'No note on this order.');
-          pushLog('No note on this order.', 'err');
         }
 
-        // Phase 2: AI
-        ecopy.textContent = 'AI is understanding your customer\'s heart...';
-        ecopy.style.opacity = '1';
+        // Phase 2: AI Analysis
         pushWebhook('ai', 'Routing to DeepSeek AI engine...');
         pushWebhook('ai', 'Analyzing customer intent...');
-        pushLog('Calling DeepSeek API...', 'ai');
+        pushLog('Calling DeepSeek AI...', 'ai');
         await sleep(220);
 
         var reasoningSteps = [
-          { prefix: '[1/5]', text: 'Detecting urgency signals in note...',  speed: 28, pause: 320 },
-          { prefix: '[2/5]', text: 'Identifying gift & packaging requests...', speed: 26, pause: 320 },
-          { prefix: '[3/5]', text: 'Mapping keywords to shipping tags...',    speed: 24, pause: 320 },
-          { prefix: '[4/5]', text: 'Scoring cancellation risk...',            speed: 28, pause: 320 },
-          { prefix: '[5/5]', text: 'Generating AI summary...',                speed: 26, pause: 280 },
+          { prefix: '1.', text: 'Detecting urgency signals in note...',  speed: 22, pause: 280 },
+          { prefix: '2.', text: 'Identifying gift & packaging requests...', speed: 20, pause: 280 },
+          { prefix: '3.', text: 'Mapping keywords to shipping tags...',    speed: 20, pause: 280 },
+          { prefix: '4.', text: 'Scoring cancellation risk...',           speed: 22, pause: 280 },
+          { prefix: '5.', text: 'Generating AI summary...',                speed: 20, pause: 300 },
         ];
         typeLines(reasoningSteps);
 
@@ -934,48 +920,38 @@
 
         if (!analyzeRes.ok) {
           var errText = await analyzeRes.text();
-          throw new Error('/api/analyze ' + analyzeRes.status + ': ' + errText);
+          throw new Error('Analyze failed ' + analyzeRes.status + ': ' + errText);
         }
 
         var result = await analyzeRes.json();
         pushWebhook('ai', 'DeepSeek response received.');
-        pushLog('DeepSeek response received.', 'ok');
-        await sleep(400);
+        pushLog('Analysis complete.', 'ok');
+        await sleep(300);
 
         // Finalize reasoning
         reasonQueue = [];
         clearReasoning();
         document.getElementById('reasoning-text').innerHTML =
-          '<div class="rs-block"><span class="rs-prefix">[OK]</span> <span class="rs-text done">Analysis complete.</span></div>';
+          '<div class="rs-block"><span class="rs-prefix">&radic;</span> <span class="rs-text done">Analysis complete.</span></div>';
 
-        // Update emotional copy
-        ecopy.textContent = 'Customer intent understood &mdash; ' + (result.urgency === 'high' ? 'priority flagged.' : 'categorized.');
-
-        // Burst tags with pop sound
-        window.playPop(0.8);
         renderTags(result.tags && result.tags.length > 0 ? result.tags : ['no-action'], 'tags-stage');
-        pushWebhook('done', 'Intent: ' + JSON.stringify(result.tags || []));
 
         var urgClass = result.urgency === 'high' ? 'high' : (result.urgency === 'normal' ? 'normal' : 'low');
         var urgLabel = (result.urgency || 'unknown').toUpperCase();
         document.getElementById('urgency-pill').className = 'urgency-pill ' + urgClass;
-        document.getElementById('urgency-label').textContent = 'URGENCY: ' + urgLabel;
+        document.getElementById('urgency-label').textContent = urgLabel;
         document.getElementById('summary-text').textContent = result.summary || '—';
-        urgRow.style.display = 'grid';
 
-        pushWebhook('done', 'Urgency: ' + urgLabel + ' | Order fully processed.');
-        pushLog('AI intent parsed successfully.', 'ok');
-        pushLog('[Done] ' + order.name + ' — urgency=' + (result.urgency||'?') + ', tags=[' + ((result.tags||[]).join(', ')) + ']', 'hi');
-
-        console.log('[AfterFlow] Hero flow complete:', result);
+        pushWebhook('done', 'Tags: ' + (result.tags || []).join(', '));
+        pushWebhook('done', 'Urgency: ' + urgLabel + ' — ' + (result.summary || '').slice(0, 50));
+        pushLog('[Done] ' + order.name + ' | Urgency: ' + urgLabel + ' | Tags: ' + ((result.tags||[]).join(', ')), 'hi');
 
       } catch(err) {
         pushWebhook('err', 'Error: ' + err.message);
         pushLog('Error: ' + err.message, 'err');
-        console.error('[AfterFlow] Hero flow error:', err);
       } finally {
         btn.disabled = false;
-        btn.textContent = 'Analyze Live Order';
+        btn.textContent = 'Analyze Latest Order';
         whTitle.classList.remove('active');
       }
     });
