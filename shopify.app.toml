@@ -2,7 +2,7 @@
 
 client_id = "6a46ae39d0d439b1f3830ef534955fb5"
 name = "AfterFlow AI - Auto Order Tags"
-application_url = "https://afterflow-ai.fly.dev"
+application_url = "https://afterflow-ai-production.up.railway.app"
 embedded = true
 
 [build]
@@ -29,6 +29,6 @@ scopes = "read_orders,write_orders"
 
 [auth]
 redirect_urls = [
-  "https://afterflow-ai.fly.dev/auth/callback",
-  "https://afterflow-ai.fly.dev/auth/shopify/callback",
+  "https://afterflow-ai-production.up.railway.app/auth/callback",
+  "https://afterflow-ai-production.up.railway.app/auth/shopify/callback",
 ]

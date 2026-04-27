@@ -5,6 +5,7 @@ RUN apk add --no-cache openssl libc6-compat
 EXPOSE 3000
 WORKDIR /app
 ENV NODE_ENV=production
+ENV SHOPIFY_APP_URL=https://afterflow-ai-production.up.railway.app
 # Gemini API key — inject via `fly secrets set GEMINI_API_KEY=...` before deploy
 ENV GEMINI_API_KEY=""
 
