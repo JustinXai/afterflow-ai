@@ -1,34 +1,29 @@
-FROM node:20-alpine
-RUN apk add --no-cache openssl libc6-compat
+# ─── Build stage ───────────────────────────────────────────────────────────────
+FROM node:20-alpine AS builder
+WORKDIR /app
+ENV NODE_ENV=development
+COPY package.json package-lock.json* ./
+RUN npm ci
+COPY . .
+RUN npx prisma generate
+RUN npm run build
 
-EXPOSE 3000
+# ─── Production stage ───────────────────────────────────────────────────────────
+FROM node:20-alpine
+RUN apk add --no-cache openssl
 WORKDIR /app
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=3000
-ENV SHOPIFY_APP_URL=https://afterflow-ai-production.up.railway.app
-ENV GEMINI_API_KEY=""
-ENV SHOPIFY_API_KEY=""
-ENV SHOPIFY_API_SECRET=""
-ENV SCOPES="read_orders,write_orders"
 
-# 1. 复制依赖描述文件
 COPY package.json package-lock.json* ./
+RUN npm ci --omit=dev
 
-# 2. 安装全部依赖 (包含 devDependencies，因为 build 需要它们)
-RUN npm install
+COPY --from=builder /app/build ./build
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/server.js ./
 
-# 3. 复制所有代码
-COPY . .
-
-# 4. 生成 Prisma 客户端 (关键步骤！)
-RUN npx prisma generate
-
-# 5. 构建项目
-RUN npm run build
-
-# 6. 清理开发依赖，减小镜像体积
-RUN npm prune --production
-
-# 7. 启动脚本：先跑数据库迁移，再启动
-CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
+# Run migrations on startup, then start server
+EXPOSE 3000
+CMD ["sh", "-c", "npx prisma migrate deploy && node server.js"]
