@@ -81,6 +81,25 @@ async function main() {
     next();
   });
 
+  // ── Diagnostics route ────────────────────────────────────────────────────
+  app.get("/__health", (req, res) => {
+    res.json({
+      ssrHandlerLoaded: !!ssrHandler,
+      buildPathExists: existsSync(BUILD_PATH),
+      env: {
+        SHOPIFY_API_KEY: process.env.SHOPIFY_API_KEY ? "(set)" : "(MISSING)",
+        SHOPIFY_API_SECRET: process.env.SHOPIFY_API_SECRET ? "(set)" : "(MISSING)",
+        SHOPIFY_APP_URL: process.env.SHOPIFY_APP_URL || "(MISSING)",
+      },
+    });
+  });
+
+  // ── Error handler ─────────────────────────────────────────────────────────
+  app.use((err, req, res, next) => {
+    console.error("[AfterFlow] SSR error:", err.message, err.stack);
+    res.status(500).json({ error: err.message });
+  });
+
   // ── SSR: API routes, webhooks, auth ────────────────────────────────────────
   if (ssrHandler) {
     app.all(
