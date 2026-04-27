@@ -1,0 +1,200 @@
+.liveCard {
+  background: #f4f4f5;
+  border: 1px solid #d4d4d8;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.brandRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.brandName {
+  font-size: 18px;
+  font-weight: 700;
+  color: #18181b;
+  letter-spacing: -0.02em;
+}
+
+.liveIndicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  border-radius: 20px;
+  padding: 4px 10px;
+}
+
+.liveDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.liveText {
+  font-size: 11px;
+  font-weight: 700;
+  color: #ef4444;
+  letter-spacing: 0.05em;
+}
+
+.flowRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.flowStep {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.arrow {
+  color: #d4d4d8;
+  transition: color 0.3s;
+}
+
+.arrowActive {
+  color: #10b981;
+}
+
+.stepBox {
+  border-radius: 8px;
+  padding: 10px 14px;
+  min-width: 140px;
+  text-align: center;
+  transition: background 0.3s;
+  background: #ffffff;
+  border: 1px solid #e4e4e7;
+}
+
+.input_received {
+  background: #eff6ff;
+  border-color: #93c5fd;
+}
+
+.ai_thinking {
+  background: #faf5ff;
+  border-color: #d8b4fe;
+}
+
+.action_taken {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+
+.stepIdle {
+  background: #ffffff;
+  border-color: #e4e4e7;
+}
+
+.stepLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #52525b;
+  margin-bottom: 4px;
+}
+
+.stepContent {
+  font-size: 11px;
+  color: #71717a;
+  line-height: 1.4;
+}
+
+.thinkingWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 20px;
+}
+
+.progressBar {
+  width: 60px;
+  height: 4px;
+  background: #e4e4e7;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: #a855f7;
+  border-radius: 2px;
+  animation: loading 1s ease-in-out infinite;
+}
+
+@keyframes loading {
+  0% { width: 0%; }
+  50% { width: 100%; }
+  100% { width: 0%; }
+}
+
+.thinkingDots {
+  font-size: 16px;
+  font-weight: 700;
+  color: #a855f7;
+  min-width: 20px;
+}
+
+.waitingLine {
+  font-size: 11px;
+  color: #a1a1aa;
+}
+
+.tagsWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.tag {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.successLine {
+  font-size: 10px;
+  color: #10b981;
+  font-weight: 500;
+}
+
+.cardActions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
