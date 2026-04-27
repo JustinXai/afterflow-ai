@@ -5,6 +5,8 @@ RUN apk add --no-cache openssl libc6-compat
 EXPOSE 3000
 WORKDIR /app
 ENV NODE_ENV=production
+# Gemini API key — inject via `fly secrets set GEMINI_API_KEY=...` before deploy
+ENV GEMINI_API_KEY=""
 
 # 1. 复制依赖描述文件
 COPY package.json package-lock.json* ./

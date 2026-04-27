@@ -3,10 +3,8 @@ let cachedConfig: AiServiceConfig | null = null;
 export interface AiServiceConfig {
   deepseekApiKey: string;
   deepseekBaseUrl: string;
-  doubaoApiKey: string | null;
-  doubaoModel: string;
-  doubaoEndpointId: string;
-  doubaoBaseUrl: string;
+  geminiApiKey: string | null;
+  geminiEndpoint: string;
 }
 
 function validateConfig(): AiServiceConfig {
@@ -20,10 +18,10 @@ function validateConfig(): AiServiceConfig {
   return {
     deepseekApiKey,
     deepseekBaseUrl: process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com",
-    doubaoApiKey: process.env.DOUBAO_API_KEY ?? null,
-    doubaoModel: process.env.DOUBAO_MODEL || "ep-20260115140805-6nxf5",
-    doubaoEndpointId: process.env.DOUBAO_ENDPOINT_ID ?? null,
-    doubaoBaseUrl: process.env.DOUBAO_BASE_URL || "https://ark.cn-beijing.volces.com/api/v3",
+    geminiApiKey: process.env.GEMINI_API_KEY ?? null,
+    geminiEndpoint:
+      process.env.GEMINI_ENDPOINT ||
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent",
   };
 }
 

@@ -3,7 +3,8 @@ import { getConfig } from "~/utils/config.server";
 
 // ─── Shared constants ──────────────────────────────────────────────────────────
 
-const TIMEOUT_MS = 10_000;
+const DEEPSEEK_TIMEOUT_MS = 10_000;
+const GEMINI_TIMEOUT_MS = 5_000;
 
 // ─── Result types ─────────────────────────────────────────────────────────────
 
@@ -15,11 +16,9 @@ export interface AnalyzeResult {
 }
 
 export interface VisionResult {
-  condition: "new" | "used" | "damaged" | "missing" | "unclear";
-  ocrText: string;
-  detectedIssues: string[];
+  condition: "damaged" | "used" | "wrong_item" | "new";
   confidence: number;
-  summary: string;
+  reason: string;
   error?: false;
 }
 
@@ -39,6 +38,15 @@ function extractJson(text: string): Record<string, unknown> {
 function safeJsonParse(raw: unknown, fallback: Record<string, unknown> = {}): Record<string, unknown> {
   if (typeof raw === "object" && raw !== null) return raw as Record<string, unknown>;
   return fallback;
+}
+
+function normalizeConfidence(value: unknown): number {
+  if (typeof value === "number") return Math.max(0, Math.min(1, value));
+  if (typeof value === "string") {
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? 0.5 : Math.max(0, Math.min(1, parsed));
+  }
+  return 0.5;
 }
 
 // ─── TextAnalyzer: DeepSeek ───────────────────────────────────────────────────
@@ -85,11 +93,11 @@ export async function analyzeOrderNote(
     return { error: true, reason: "DeepSeek key not configured" };
   }
 
-  let rawResponse: string = "";
+  let rawResponse = "";
 
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    const timer = setTimeout(() => controller.abort(), DEEPSEEK_TIMEOUT_MS);
 
     const response = await fetch(`${deepseekBaseUrl}/chat/completions`, {
       method: "POST",
@@ -159,7 +167,7 @@ export async function analyzeOrderNote(
     const reason = err instanceof Error ? err.message : String(err);
 
     if (reason === "The user aborted a request.") {
-      return { error: true, reason: "DeepSeek request timed out after 10s" };
+      return { error: true, reason: `DeepSeek request timed out after ${DEEPSEEK_TIMEOUT_MS / 1000}s` };
     }
 
     await prisma.aiLog.create({
@@ -177,124 +185,95 @@ export async function analyzeOrderNote(
   }
 }
 
-// ─── VisionAnalyzer: Doubao (ByteDance Ark) ───────────────────────────────────
+// ─── VisionAnalyzer: Gemini 3.1 Flash Lite Preview ─────────────────────────────
 
-const VISION_SYSTEM_PROMPT = `You are a return inspection expert.
-Analyze the provided image(s) of a returned item.
-Respond with ONLY a valid JSON object — no markdown, no explanation.
-Schema: {
-  "condition": "new|used|damaged|missing|unclear",
-  "ocrText": "verbatim text found in image",
-  "detectedIssues": ["issue1", "issue2"],
-  "confidence": 0.0-1.0,
-  "summary": "one sentence describing the overall condition"
-}`;
-
-interface DoubaoMessage {
-  role: "system" | "user";
-  content: Array<{
-    type: "text" | "image_url";
-    text?: string;
-    image_url?: { url: string };
-  }>;
-}
-
-function buildVisionResult(
-  parsed: Record<string, unknown>,
-  ocrFallback: string,
-): VisionResult {
-  const validConditions = ["new", "used", "damaged", "missing", "unclear"];
-  const condition = validConditions.includes(String(parsed.condition))
-    ? (String(parsed.condition) as VisionResult["condition"])
-    : "unclear";
-
-  const detectedIssues = Array.isArray(parsed.detectedIssues)
-    ? parsed.detectedIssues.filter((i) => typeof i === "string").map(String)
-    : [];
-
-  const confidence = typeof parsed.confidence === "number"
-    ? Math.max(0, Math.min(1, parsed.confidence))
-    : 0.5;
-
-  const summary = parsed.summary
-    ? String(parsed.summary)
-    : `${condition} condition detected`;
-
-  return {
-    condition,
-    ocrText: parsed.ocrText ? String(parsed.ocrText) : ocrFallback,
-    detectedIssues,
-    confidence,
-    summary,
-  };
+/**
+ * Returns the condition as a safe VisionResult["condition"] value.
+ * Maps "wrong item" / "wrong" to "wrong_item" to match the strict union.
+ */
+function normalizeCondition(value: unknown): VisionResult["condition"] {
+  const raw = String(value).toLowerCase();
+  if (raw === "damaged") return "damaged";
+  if (raw === "used") return "used";
+  if (raw === "wrong item" || raw === "wrong_item" || raw === "wrong item received") return "wrong_item";
+  if (raw === "new") return "new";
+  return "new"; // default safest assumption
 }
 
 export interface AnalyzeImageInput {
-  imageUrl?: string;
-  base64Image?: string;
+  /** Image as a plain base64 string (no data-URI prefix) */
+  base64: string;
+  /** MIME type of the image, e.g. "image/jpeg", "image/png" */
   mimeType?: string;
   orderId: string;
 }
 
 export async function analyzeReturnImage(
-  input: AnalyzeImageInput,
+  input: AnalyzeImageInput | string,
 ): Promise<VisionResult | AiError> {
-  const { imageUrl, base64Image, mimeType = "image/jpeg", orderId } = input;
+  const base64 = typeof input === "string" ? input : (input.base64 ?? "");
+  const mimeType = typeof input === "string" ? "image/jpeg" : (input.mimeType ?? "image/jpeg");
+  const orderId = typeof input === "string" ? input : (input.orderId ?? "");
 
-  if (!imageUrl && !base64Image) {
-    return { error: true, reason: "No image provided — supply imageUrl or base64Image" };
+  if (!base64) {
+    return { error: true, reason: "No image data provided — supply a base64 string" };
   }
 
-  const { doubaoApiKey, doubaoEndpointId, doubaoBaseUrl } = getConfig();
-
-  if (!doubaoApiKey) {
-    return { error: true, reason: "Doubao API key not configured (DOUBAO_API_KEY)" };
+  if (!orderId) {
+    return { error: true, reason: "orderId is required" };
   }
 
-  if (!doubaoEndpointId) {
-    return { error: true, reason: "Doubao endpoint ID not configured (DOUBAO_ENDPOINT_ID)" };
+  const { geminiApiKey, geminiEndpoint } = getConfig();
+
+  if (!geminiApiKey) {
+    return manualReviewResult("Gemini API key not configured (GEMINI_API_KEY)");
   }
 
-  const imageContent: { type: "image_url"; image_url: { url: string } } = {
-    type: "image_url",
-    image_url: {
-      url: base64Image
-        ? `data:${mimeType};base64,${base64Image}`
-        : imageUrl!,
+  const visionPrompt = `You are a return inspection expert analyzing a product image.
+Inspect the product carefully and respond with ONLY a valid JSON object — no markdown, no explanation.
+Classify the product into exactly ONE of these four categories:
+  1. "damaged"   — the product shows visible physical damage, scratches, dents, or defects
+  2. "used"      — the product shows signs of use (opened packaging, wear, fingerprints, etc.) but is not physically damaged
+  3. "wrong_item" — the product received does not match what was ordered (wrong size, color, model, etc.)
+  4. "new"       — the product appears brand new, sealed or in perfect condition with no signs of use
+
+Schema: { "condition": "damaged|used|wrong_item|new", "confidence": 0.0-1.0, "reason": "one sentence explaining the classification" }`;
+
+  const payload = {
+    contents: [
+      {
+        role: "user",
+        parts: [
+          {
+            inline_data: {
+              mime_type: mimeType,
+              data: base64,
+            },
+          },
+          {
+            text: visionPrompt,
+          },
+        ],
+      },
+    ],
+    generationConfig: {
+      responseMimeType: "application/json",
+      temperature: 0.2,
     },
   };
-
-  const messages: DoubaoMessage[] = [
-    { role: "system", content: [{ type: "text", text: VISION_SYSTEM_PROMPT }] },
-    {
-      role: "user",
-      content: [
-        imageContent,
-        { type: "text", text: "Inspect this return item image and report its condition." },
-      ],
-    },
-  ];
 
   let rawResponse = "";
 
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    const timer = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
 
-    const endpoint = `${doubaoBaseUrl}/chat/completions?endpoint_id=${doubaoEndpointId}`;
+    const url = `${geminiEndpoint}?key=${geminiApiKey}`;
 
-    const response = await fetch(endpoint, {
+    const response = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${doubaoApiKey}`,
-      },
-      body: JSON.stringify({
-        model: doubaoEndpointId,
-        messages,
-        max_tokens: 400,
-        temperature: 0.2,
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
       signal: controller.signal,
     });
 
@@ -302,22 +281,36 @@ export async function analyzeReturnImage(
 
     if (!response.ok) {
       const body = await response.text().catch(() => "");
-      throw new Error(`Doubao HTTP ${response.status}: ${body}`);
+      throw new Error(`Gemini HTTP ${response.status}: ${body}`);
     }
 
     const data = safeJsonParse(await response.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
+      candidates?: Array<{
+        content?: {
+          parts?: Array<{ text?: string }>;
+        };
+      }>;
     };
 
-    rawResponse = data?.choices?.[0]?.message?.content ?? "";
+    rawResponse = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+
+    if (!rawResponse) {
+      throw new Error("Gemini returned an empty response");
+    }
+
     const parsed = extractJson(rawResponse);
-    const result = buildVisionResult(parsed, "");
+
+    const result: VisionResult = {
+      condition: normalizeCondition(parsed.condition),
+      confidence: normalizeConfidence(parsed.confidence),
+      reason: parsed.reason ? String(parsed.reason) : "Classification completed.",
+    };
 
     await prisma.aiLog.create({
       data: {
         orderId,
         status: "vision_success",
-        input: `image: ${imageUrl ?? "[base64]"}`,
+        input: `image (${mimeType}, ${Math.round(base64.length * 0.75)} bytes)`,
         output: JSON.stringify(result),
         error: "",
         processedAt: new Date(),
@@ -329,27 +322,33 @@ export async function analyzeReturnImage(
     const reason = err instanceof Error ? err.message : String(err);
 
     if (reason === "The user aborted a request.") {
-      return { error: true, reason: "Doubao vision request timed out after 10s" };
+      return manualReviewResult(`Gemini request timed out after ${GEMINI_TIMEOUT_MS / 1000}s`);
     }
 
     await prisma.aiLog.create({
       data: {
         orderId,
         status: "vision_error",
-        input: `image: ${imageUrl ?? "[base64]"}`,
+        input: `image (${mimeType}, ${Math.round(base64.length * 0.75)} bytes)`,
         output: rawResponse,
         error: reason,
         processedAt: new Date(),
       },
     });
 
-    return { error: true, reason };
+    return manualReviewResult(reason);
   }
 }
 
+function manualReviewResult(failureReason: string): VisionResult {
+  return {
+    condition: "new",
+    confidence: 0,
+    reason: `Manual Review Required — ${failureReason}`,
+  };
+}
+
 // ─── AIProvider factory (public API) ──────────────────────────────────────────
-// Use this factory when you need a unified interface. Individual analyzers above
-// can also be called directly for more control.
 
 export interface AIProvider {
   text: typeof analyzeOrderNote;
