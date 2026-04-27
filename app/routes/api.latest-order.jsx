@@ -1,4 +1,3 @@
-import { json } from "@react-router/node";
 import { authenticate } from "../shopify.server";
 
 /**
@@ -32,5 +31,5 @@ export const loader = async ({ request }) => {
   const data = await response.json();
   const order = data?.data?.orders?.edges?.[0]?.node ?? null;
 
-  return json({ order });
+  return new Response(JSON.stringify({ order }), { headers: { "Content-Type": "application/json" } });
 };

@@ -1,4 +1,3 @@
-import { json } from "@react-router/node";
 import { authenticate } from "../shopify.server";
 import { analyzeOrderNote } from "../services/ai.server";
 import { updateShopifyOrderTags, prependOrderNote } from "../models/ai.server";
@@ -36,7 +35,7 @@ export const action = async ({ request }) => {
     // 405 for non-POST, 400 for other validation failures). Return 200 to
     // prevent Shopify from retrying malformed requests.
     log("error", `authenticate.webhook threw: ${err instanceof Error ? err.message : String(err)}`);
-    return json({ reason: "Auth error" }, { status: 200 });
+    return new Response(JSON.stringify({ reason: "Auth error" }), { headers: { "Content-Type": "application/json" }, status: 200 });
   }
 
   const { payload, shop, topic, admin } = webhookCtx;
@@ -44,7 +43,7 @@ export const action = async ({ request }) => {
   // Sanity check: confirm this is the orders/create topic
   if (topic !== "orders/create") {
     log("warn", `Unexpected topic "${topic}" — expected "orders/create". Skipping.`);
-    return json({ reason: `Unexpected topic: ${topic}` }, { status: 200 });
+    return new Response(JSON.stringify({ reason: `Unexpected topic: ${topic}` }), { headers: { "Content-Type": "application/json" }, status: 200 });
   }
 
   log("info", "HMAC verified", { shop, topic });
@@ -56,7 +55,7 @@ export const action = async ({ request }) => {
 
   if (!orderId) {
     log("error", `Order missing id field — cannot process`);
-    return json({ reason: "Missing order id" }, { status: 200 });
+    return new Response(JSON.stringify({ reason: "Missing order id" }), { headers: { "Content-Type": "application/json" }, status: 200 });
   }
 
   log("info", `Order received: ${orderName} (${orderId})`, {
@@ -68,21 +67,21 @@ export const action = async ({ request }) => {
   if (process.env.AF_PCD_APPROVED !== "true") {
     log("warn", `AF_PCD_APPROVED is not "true" — skipping analysis for ${orderName}`);
     await logToPrisma(orderId, "skipped", note || "(no note)", "", "Feature disabled");
-    return json({ status: "skipped", reason: "Feature disabled" }, { status: 200 });
+    return new Response(JSON.stringify({ status: "skipped", reason: "Feature disabled" }), { headers: { "Content-Type": "application/json" }, status: 200 });
   }
 
   // ── Step 4: Skip if no note ────────────────────────────────────────────────
   if (!note) {
     log("info", `Order ${orderName} has no note — skipping AI analysis`);
     await logToPrisma(orderId, "skipped", "(no note)", "", "No note provided");
-    return json({ status: "skipped", reason: "No note" }, { status: 200 });
+    return new Response(JSON.stringify({ status: "skipped", reason: "No note" }), { headers: { "Content-Type": "application/json" }, status: 200 });
   }
 
   // ── Step 5: Idempotency — skip if already analyzed ─────────────────────────
   const alreadyDone = await prisma.orderAnalysis.findUnique({ where: { orderId } });
   if (alreadyDone) {
     log("info", `Order ${orderName} already analyzed — skipping`);
-    return json({ status: "duplicate", reason: "Already processed" }, { status: 200 });
+    return new Response(JSON.stringify({ status: "duplicate", reason: "Already processed" }), { headers: { "Content-Type": "application/json" }, status: 200 });
   }
 
   // ── Step 6: AI analysis ────────────────────────────────────────────────────
@@ -97,7 +96,7 @@ export const action = async ({ request }) => {
     const msg = err instanceof Error ? err.message : String(err);
     log("error", `analyzeOrderNote failed for ${orderName}: ${msg}`);
     await logToPrisma(orderId, "error", note, "", msg);
-    return json({ reason: "AI analysis failed" }, { status: 200 });
+    return new Response(JSON.stringify({ reason: "AI analysis failed" }), { headers: { "Content-Type": "application/json" }, status: 200 });
   }
 
   // ── Step 7: Write tags to Shopify via tagsAdd mutation ─────────────────────
@@ -134,7 +133,7 @@ export const action = async ({ request }) => {
   // ── Step 9: Persist to Prisma ───────────────────────────────────────────────
   await logToPrisma(orderId, "success", note, JSON.stringify(analysisResult), "");
 
-  return json({ status: "processed", orderId, ...analysisResult }, { status: 200 });
+  return new Response(JSON.stringify({ status: "processed", orderId, ...analysisResult }), { headers: { "Content-Type": "application/json" }, status: 200 });
 };
 
 /** Lightweight Prisma logger — never throws */

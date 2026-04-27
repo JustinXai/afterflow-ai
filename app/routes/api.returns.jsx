@@ -1,4 +1,3 @@
-import { json } from "@react-router/node";
 import { authenticate } from "../shopify.server";
 import { analyzeReturnImage } from "../services/ai.server";
 
@@ -35,7 +34,7 @@ export const action = async ({ request }) => {
     log("warn", "Unauthenticated request to /api/returns — rejecting", {
       err: err instanceof Error ? err.message : String(err),
     });
-    return json({ error: true, reason: "Unauthorized" }, { status: 401 });
+    return new Response(JSON.stringify({ error: true, reason: "Unauthorized" }), { headers: { "Content-Type": "application/json" }, status: 401 });
   }
 
   // ── Step 2: Parse body ─────────────────────────────────────────────────────
@@ -44,7 +43,7 @@ export const action = async ({ request }) => {
   try {
     body = await request.json();
   } catch {
-    return json({ error: true, reason: "Invalid JSON body" }, { status: 400 });
+    return new Response(JSON.stringify({ error: true, reason: "Invalid JSON body" }), { headers: { "Content-Type": "application/json" }, status: 400 });
   }
 
   const { base64, mimeType, orderId = "", orderName = `#${orderId}` } = body;
@@ -57,16 +56,16 @@ export const action = async ({ request }) => {
 
   // ── Step 3: Input validation ─────────────────────────────────────────────
   if (!base64) {
-    return json(
-      { error: true, reason: "Provide base64 image data in request body" },
-      { status: 400 },
+    return new Response(
+      JSON.stringify({ error: true, reason: "Provide base64 image data in request body" }),
+      { headers: { "Content-Type": "application/json" }, status: 400 },
     );
   }
 
   if (!orderId) {
-    return json(
-      { error: true, reason: "orderId is required" },
-      { status: 400 },
+    return new Response(
+      JSON.stringify({ error: true, reason: "orderId is required" }),
+      { headers: { "Content-Type": "application/json" }, status: 400 },
     );
   }
 
@@ -81,9 +80,9 @@ export const action = async ({ request }) => {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     log("error", `analyzeReturnImage threw for ${orderName}: ${msg}`);
-    return json(
-      { error: true, reason: "Vision analysis threw an unexpected error" },
-      { status: 500 },
+    return new Response(
+      JSON.stringify({ error: true, reason: "Vision analysis threw an unexpected error" }),
+      { headers: { "Content-Type": "application/json" }, status: 500 },
     );
   }
 
@@ -94,14 +93,14 @@ export const action = async ({ request }) => {
   // can display the degraded state without crashing.
   if (result.error) {
     log("warn", `Vision analysis error for ${orderName}: ${result.reason}`);
-    return json(result, { status: 200 });
+    return new Response(JSON.stringify(result), { headers: { "Content-Type": "application/json" } });
   }
 
   log(
     "info",
     `Vision analyzed ${orderName}: ${result.condition} (confidence ${result.confidence})`,
   );
-  return json(result, { status: 200 });
+  return new Response(JSON.stringify(result), { headers: { "Content-Type": "application/json" }, status: 200 });
 };
 
 /**
@@ -111,9 +110,12 @@ export const action = async ({ request }) => {
  * Does not require auth — safe to probe from monitoring tools.
  */
 export const loader = async () => {
-  return json({
-    status: "ok",
-    service: "AfterFlow VisionAnalyzer (Gemini Flash Lite)",
-    timestamp: new Date().toISOString(),
-  });
+  return new Response(
+    JSON.stringify({
+      status: "ok",
+      service: "AfterFlow VisionAnalyzer (Gemini Flash Lite)",
+      timestamp: new Date().toISOString(),
+    }),
+    { headers: { "Content-Type": "application/json" } },
+  );
 };

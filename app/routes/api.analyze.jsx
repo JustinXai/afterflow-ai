@@ -1,4 +1,3 @@
-import { json } from "@react-router/node";
 import { authenticate } from "../shopify.server";
 import { analyzeOrderNote } from "../models/ai.server";
 
@@ -14,15 +13,15 @@ export const action = async ({ request }) => {
   const { note, orderId } = body;
 
   if (!note || typeof note !== "string") {
-    return json({ error: "Missing or invalid 'note' field" }, { status: 400 });
+    return new Response(JSON.stringify({ error: "Missing or invalid 'note' field" }), { headers: { "Content-Type": "application/json" }, status: 400 });
   }
 
   try {
     const result = await analyzeOrderNote(note, orderId ?? `demo-${Date.now()}`);
-    return json({ type: "analyze", note, orderId: orderId ?? null, ...result });
+    return new Response(JSON.stringify({ type: "analyze", note, orderId: orderId ?? null, ...result }), { headers: { "Content-Type": "application/json" } });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("[AfterFlow] /api/analyze error:", message);
-    return json({ error: message }, { status: 500 });
+    return new Response(JSON.stringify({ error: message }), { headers: { "Content-Type": "application/json" }, status: 500 });
   }
 };

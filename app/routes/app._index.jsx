@@ -1,4 +1,3 @@
-import { json } from "@react-router/node";
 import { useEffect, useState } from "react";
 import { useFetcher, useLoaderData } from "react-router";
 import {
@@ -48,7 +47,7 @@ export const action = async ({ request }) => {
   const type = String(formData.get("type") ?? "analyze");
 
   if (process.env.AF_PCD_APPROVED !== "true") {
-    return json({ type, error: "Feature not active (AF_PCD_APPROVED != true)" }, { status: 403 });
+    return new Response(JSON.stringify({ type, error: "Feature not active (AF_PCD_APPROVED != true)" }), { headers: { "Content-Type": "application/json" }, status: 403 });
   }
 
   if (type === "fetchOrders") {
