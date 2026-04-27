@@ -5,6 +5,7 @@ export interface AiServiceConfig {
   deepseekBaseUrl: string;
   doubaoApiKey: string | null;
   doubaoModel: string;
+  doubaoEndpointId: string;
   doubaoBaseUrl: string;
 }
 
@@ -21,6 +22,7 @@ function validateConfig(): AiServiceConfig {
     deepseekBaseUrl: process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com",
     doubaoApiKey: process.env.DOUBAO_API_KEY ?? null,
     doubaoModel: process.env.DOUBAO_MODEL || "ep-20260115140805-6nxf5",
+    doubaoEndpointId: process.env.DOUBAO_ENDPOINT_ID ?? null,
     doubaoBaseUrl: process.env.DOUBAO_BASE_URL || "https://ark.cn-beijing.volces.com/api/v3",
   };
 }

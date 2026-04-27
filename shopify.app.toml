@@ -1,8 +1,8 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "6a46ae39d0d439b1f3830ef534955fb5"
-name = "AfterFlow AI"
-application_url = "https://example.com"
+name = "AfterFlow AI - Auto Order Tags"
+application_url = "https://afterflow-ai.fly.dev"
 embedded = true
 
 [build]
@@ -28,4 +28,7 @@ api_version = "2026-04"
 scopes = "read_orders,write_orders"
 
 [auth]
-redirect_urls = [ "https://example.com/api/auth" ]
+redirect_urls = [
+  "https://afterflow-ai.fly.dev/auth/callback",
+  "https://afterflow-ai.fly.dev/auth/shopify/callback",
+]

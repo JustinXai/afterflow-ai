@@ -1,0 +1,13 @@
+app = "afterflow-ai"
+
+primary_region = "sin"
+
+[http_service]
+internal_port = 3000
+
+[mounts]
+source = "afterflow_data"
+destination = "/app/prisma/data"
+
+[env]
+DATABASE_URL = "file:/app/prisma/data/dev.sqlite"
