@@ -7,12 +7,20 @@ import {
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import prisma from "./db.server";
 
+if (!process.env.SHOPIFY_APP_URL) {
+  throw new Error(
+    "Missing SHOPIFY_APP_URL environment variable.\n" +
+    "This is the public URL of your deployed app (e.g. https://your-app.up.railway.app).\n" +
+    "Set it in Railway Dashboard → Variables tab, or in your .env file as SHOPIFY_APP_URL=https://your-app-url.railway.app"
+  );
+}
+
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
   apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
   apiVersion: ApiVersion.October25,
   scopes: process.env.SCOPES?.split(","),
-  appUrl: process.env.SHOPIFY_APP_URL || "",
+  appUrl: process.env.SHOPIFY_APP_URL,
   authPathPrefix: "/auth",
   sessionStorage: new PrismaSessionStorage(prisma),
   distribution: AppDistribution.AppStore,
