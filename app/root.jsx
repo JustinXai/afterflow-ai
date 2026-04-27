@@ -15,6 +15,9 @@ export default function App() {
         <Links />
       </head>
       <body>
+        <div style={{ color: 'red', fontSize: '30px', fontWeight: 'bold', background: 'yellow', padding: '10px' }}>
+          If you see this, SSR HTML is rendering but Hydration is broken.
+        </div>
         <Outlet />
         <ScrollRestoration />
         <Scripts />
