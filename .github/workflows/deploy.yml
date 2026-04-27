@@ -3,19 +3,13 @@ name: Deploy to Railway
 on:
   push:
     branches: [main]
-  workflow_dispatch:
+
+# Railway automatically detects pushes to connected GitHub repos and deploys.
+# No RAILWAY_TOKEN needed — Railway's GitHub App handles everything.
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli
-
-      - name: Deploy via Railway CLI
-        run: railway up --service afterflow-ai
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
+      - run: echo "Railway is connected via GitHub Sync — deployment triggered automatically"
