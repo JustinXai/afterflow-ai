@@ -1,4 +1,4 @@
-import prisma from "~/db.server";
+import prisma from "./db.server";
 
 const AI_PROMPT = `Act as an e-commerce expert. Analyze this order note and return a JSON object with the following exact structure:
 {

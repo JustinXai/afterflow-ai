@@ -1,5 +1,5 @@
 import { json } from "@react-router/node";
-import { authenticate } from "~/shopify.server";
+import { authenticate } from "../shopify.server";
 
 /**
  * GET /api/latest-order

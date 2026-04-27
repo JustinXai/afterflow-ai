@@ -1,6 +1,6 @@
 import { json } from "@react-router/node";
-import { authenticate } from "~/shopify.server";
-import { analyzeOrderNote } from "~/models/ai.server";
+import { authenticate } from "../shopify.server";
+import { analyzeOrderNote } from "../models/ai.server";
 
 /**
  * POST /api/analyze

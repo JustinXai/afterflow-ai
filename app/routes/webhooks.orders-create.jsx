@@ -1,8 +1,8 @@
 import { json } from "@react-router/node";
-import { authenticate } from "~/shopify.server";
-import { analyzeOrderNote } from "~/services/ai.server";
-import { updateShopifyOrderTags, prependOrderNote } from "~/models/ai.server";
-import prisma from "~/db.server";
+import { authenticate } from "../shopify.server";
+import { analyzeOrderNote } from "../services/ai.server";
+import { updateShopifyOrderTags, prependOrderNote } from "../models/ai.server";
+import prisma from "../db.server";
 
 /**
  * POST /webhooks/orders/create

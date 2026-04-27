@@ -16,9 +16,9 @@ import {
   Badge,
 } from "@shopify/polaris";
 import enTranslations from "@shopify/polaris/locales/en.json";
-import { authenticate } from "~/shopify.server";
-import prisma from "~/db.server";
-import { analyzeOrderNote } from "~/models/ai.server";
+import { authenticate } from "../shopify.server";
+import prisma from "../db.server";
+import { analyzeOrderNote } from "../models/ai.server";
 
 // ─── Loader ────────────────────────────────────────────────────────────────────
 

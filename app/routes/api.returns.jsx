@@ -1,6 +1,6 @@
 import { json } from "@react-router/node";
-import { authenticate } from "~/shopify.server";
-import { analyzeReturnImage } from "~/services/ai.server";
+import { authenticate } from "../shopify.server";
+import { analyzeReturnImage } from "../services/ai.server";
 
 /**
  * POST /api/returns

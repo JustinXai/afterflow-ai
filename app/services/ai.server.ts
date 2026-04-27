@@ -1,5 +1,5 @@
-import prisma from "~/db.server";
-import { getConfig } from "~/utils/config.server";
+import prisma from "./db.server";
+import { getConfig } from "./utils/config.server";
 
 // ─── Shared constants ──────────────────────────────────────────────────────────
 
