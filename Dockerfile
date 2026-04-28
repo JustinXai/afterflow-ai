@@ -1,10 +1,12 @@
 # Single-stage build: install deps + build + serve in one image
-FROM node:20-alpine
+# Pin exact Node version to satisfy package.json engines field (>=20.19)
+FROM node:20.19-alpine
 RUN apk add --no-cache openssl
 WORKDIR /app
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=3000
+ENV npm_config_engine_strict=false
 
 COPY package.json package-lock.json* ./
 RUN npm ci

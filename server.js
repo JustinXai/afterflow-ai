@@ -1,6 +1,3 @@
-import express from "express";
-import compression from "compression";
-import morgan from "morgan";
 import { createRequestHandler } from "@react-router/express";
 import { readFileSync, existsSync } from "fs";
 import { join, extname } from "path";
@@ -30,10 +27,6 @@ const MIME = {
 };
 
 async function main() {
-  const app = express();
-  app.disable("x-powered-by");
-  app.use(compression());
-
   let ssrHandler;
   try {
     const build = await import(BUILD_PATH + "?t=" + Date.now());
@@ -44,7 +37,33 @@ async function main() {
     ssrHandler = null;
   }
 
-  // ── Static files from public/ ───────────────────────────────────────────────
+  if (!ssrHandler) {
+    // Static-only fallback using built-in http module
+    const http = await import("http");
+    const server = http.createServer(async (req, res) => {
+      const url = new URL(req.url, `http://${req.headers.host}`);
+      const demoPath = join(PUBLIC_PATH, "demo.html");
+      if (existsSync(demoPath) && (url.pathname === "/" || url.pathname === "/index.html")) {
+        const html = readFileSync(demoPath, "utf8");
+        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+        res.end(html);
+      } else {
+        res.writeHead(404);
+        res.end("Not Found");
+      }
+    });
+    server.listen(PORT, "0.0.0.0", () => {
+      console.log(`[AfterFlow] Static server running → http://localhost:${PORT}`);
+    });
+    return;
+  }
+
+  // SSR mode: need express for middleware
+  const express = (await import("express")).default;
+  const app = express();
+  app.disable("x-powered-by");
+
+  // Static files from public/
   app.use(express.static(PUBLIC_PATH, {
     setHeaders(res, filePath) {
       const ext = extname(filePath).toLowerCase();
@@ -62,7 +81,7 @@ async function main() {
     },
   }));
 
-  // ── Serve demo.html at root ────────────────────────────────────────────────
+  // Serve demo.html at root
   app.use((req, res, next) => {
     if (req.path === "/" || req.path === "/index.html") {
       const demoPath = join(PUBLIC_PATH, "demo.html");
@@ -81,7 +100,7 @@ async function main() {
     next();
   });
 
-  // ── Diagnostics route ────────────────────────────────────────────────────
+  // Diagnostics route
   app.get("/__health", (req, res) => {
     res.json({
       ssrHandlerLoaded: !!ssrHandler,
@@ -94,42 +113,25 @@ async function main() {
     });
   });
 
-  // ── Error handler ─────────────────────────────────────────────────────────
+  // Error handler
   app.use((err, req, res, next) => {
     console.error("[AfterFlow] SSR error:", err.message, err.stack);
     res.status(500).json({ error: err.message });
   });
 
-  // ── SSR: API routes, webhooks, auth ────────────────────────────────────────
-  if (ssrHandler) {
-    app.all(
-      "/api/:path(*)",
-      express.json(),
-      express.text(),
-      ssrHandler
-    );
-    app.all(
-      "/auth/:path(*)",
-      ssrHandler
-    );
-    app.all(
-      "/webhooks/:path(*)",
-      express.raw({ type: "application/json" }),
-      ssrHandler
-    );
-    app.use(ssrHandler);
-  } else {
-    app.use((req, res) => {
-      res.status(404).send("Not Found — SSR build not available");
-    });
-  }
-
-  app.use(morgan("tiny"));
+  // SSR: API routes, webhooks, auth
+  app.all("/api/:path(*)", express.json(), express.text(), ssrHandler);
+  app.all("/auth/:path(*)", ssrHandler);
+  app.all(
+    "/webhooks/:path(*)",
+    express.raw({ type: "application/json" }),
+    ssrHandler
+  );
+  app.use(ssrHandler);
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`[AfterFlow] Server running → http://localhost:${PORT}`);
     console.log(`[AfterFlow] Demo:         http://localhost:${PORT}/`);
-    if (!ssrHandler) console.warn("[AfterFlow] WARNING: API/auth/webhooks disabled (SSR build missing)");
   });
 }
 
