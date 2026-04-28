@@ -1,4 +1,3 @@
-import { LoaderFunctionArgs } from "@remix-run/node";
 import shopify from "../shopify.server.js";
 
 /**
@@ -8,7 +7,7 @@ import shopify from "../shopify.server.js";
  * GET  /auth/login?shop=... → shopify.login() throws redirect to Shopify OAuth
  * GET  /auth/callback?...   → shopify.authenticate.admin() handles OAuth callback internally
  */
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader({ request }) {
   const url = new URL(request.url);
   const path = url.pathname.replace(/^\/auth\//, "") || "login";
 
