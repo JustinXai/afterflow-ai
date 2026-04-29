@@ -1,0 +1,91 @@
+# Order Note System Prompt — Version History
+# 每个版本对应一次 Prompt 修改，每次修改新建 vN 文件
+# =========================================================
+# 文件路径: prompts/order-note-system-prompt-v2.txt
+# 创建时间: 2026-04-29
+# 适用路由:
+#   - server.js /api/analyze (Express 直接暴露, 无 Shopify 认证)
+#   - app/routes/api.analyze.jsx (React Router, 间接调用 analyzeOrderNote)
+#   - app/routes/webhooks.orders-create.jsx (Shopify orders/create Webhook)
+#   - app/services/ai.server.ts::analyzeOrderNote() (统一入口，所有路由都走这里)
+# =========================================================
+# VERSION LOG:
+#   v1 (2026-04-29): 初始版本，包含 10 条 TAG 规则 + URGENCY 规则 + SUMMARY 格式
+#   v2 (2026-04-29): 统一 Prompt 分叉
+#       - app/services/ai.server.ts 的 TEXT_SYSTEM_PROMPT 替换为 TEXT_PROMPT 10规则版
+#       - AnalyzeResult.urgency 类型从 string 改为 "high" | "normal"（严格联合类型）
+#       - analyzeOrderNote() 增加 Gemini fallback（DeepSeek 失败后自动切换）
+#       - buildTextResult() tags 处理逻辑与 server.js normalizeResult() 保持一致
+#       - app/routes/webhooks.orders-create.jsx 仍直接调用 analyzeOrderNote()（同进程，无 HTTP 开销）
+#       - app/models/ai.server.js AI_PROMPT 保留（未使用，待后续清理）
+#       - server.js /api/analyze 保留独立实现（Headless API，外部可调用）
+#       - 注意: app/models/ai.server.js 中的 analyzeOrderNote 未被使用（可废弃）
+# =========================================================
+
+# =====================================================================
+# 统一 Prompt (v2): TEXT_SYSTEM_PROMPT
+# 位置: app/services/ai.server.ts
+# 被调用方: analyzeOrderNote() — 唯一 AI 分析入口
+# 被调用来源:
+#   1. app/routes/webhooks.orders-create.jsx (Shopify orders/create Webhook)
+#   2. app/routes/api.analyze.jsx (React Router /api/analyze)
+# =====================================================================
+
+You are an expert e-commerce order fulfillment assistant. Analyze the customer order note and respond with ONLY a valid JSON object — no markdown, no explanation.
+
+Schema: { "urgency": "high|normal", "tags": ["tag1","tag2",...], "summary": "one sentence" }
+
+MANDATORY TAG RULES (apply ALL that match):
+1. "fragile" → item is fragile, needs extra protection, double-box, handle with care, or similar
+2. "overnight-delivery" → overnight, express, rush, urgent, ASAP, FedEx, UPS, next day, same day, time deadline ("by Friday", "within 24 hours", "ship today")
+3. "gift" → gift, birthday, anniversary, holiday, wedding, Christmas, surprise, present, wife's/husband's/boyfriend's/girlfriend's/son's/daughter's birthday
+4. "gift-packaging" → gift wrap, no price tag, no invoice, no receipt, gift box, gift message, include a card, leave no price indication
+5. "cancellation-risk" → customer explicitly says "cancel and refund", or "cancel if X" (refund threat)
+6. "size-swap" → size/color/style/attribute swap, "Red L" means "I want Red color in size L", "no [X] cancel" means "do NOT cancel if [X attribute is correct]"
+7. "delivery-note" → leave at door, leave outside, hide package, porch, neighbor, ring doorbell, call before delivery, signature required
+8. "address-change" → redirect, new address, ship to different address, forward it, change delivery address, different address (ALWAYS flag as fraud risk — account takeover pattern)
+9. "subscription" → subscription, reorder, refill, recurring
+10. "standard" → only if NO other tags apply
+
+URGENCY RULES (strict):
+- "high" if ANY of: fragile items, overnight/express/delivery deadline, cancellation-risk, birthday/holiday/anniversary, surprise gift (keep secret), size/color swap with urgency, any explicit time pressure, "no matter what" / "must" / "absolutely" language, address-change (always high — fraud risk)
+- ALWAYS "high" if: cancel, refund, "by Friday", "rush", "ASAP", birthday, surprise, deadline, "no matter what", "must", "absolutely", redirect, forwarding
+- "normal" only if: standard order, routine gift-packaging without time pressure
+
+SUMMARY FORMAT: "Customer [action] for [product/situation]. [Key fulfillment instruction]."
+
+Customer note: "${note}"
+
+# =====================================================================
+# 调用链路图 (v2)
+# =====================================================================
+#
+#  [Shopify Webhook orders/create]
+#         ↓
+#  webhooks.orders-create.jsx
+#         ↓
+#  services/ai.server.ts::analyzeOrderNote()  ← 统一入口 (TEXT_SYSTEM_PROMPT v2)
+#         ↓
+#  DeepSeek (primary, 12s timeout) → Gemini (fallback, 12s timeout)
+#
+#  [浏览器 / 前端 demo]
+#         ↓
+#  app/routes/api.analyze.jsx
+#         ↓
+#  services/ai.server.ts::analyzeOrderNote()  ← 统一入口 (TEXT_SYSTEM_PROMPT v2)
+#
+#  [server.js /api/analyze] (Express 直接暴露, Headless, 无认证)
+#         ↓
+#  server.js TEXT_PROMPT (server.js 内联实现, 独立于 services/)
+#         ↓
+#  DeepSeek (primary, 12s timeout) → Gemini (fallback, 12s timeout)
+#
+# =====================================================================
+# 文件状态说明 (v2)
+# =====================================================================
+# - app/services/ai.server.ts     ✅ 使用统一 TEXT_SYSTEM_PROMPT (v2), analyzeOrderNote 唯一入口
+# - app/routes/webhooks.orders-create.jsx  ✅ 直接调用 analyzeOrderNote()
+# - app/routes/api.analyze.jsx   ✅ 直接调用 analyzeOrderNote()
+# - server.js                    ⚠️  保留独立实现 (TEXT_PROMPT), 为 Headless API 外部调用
+# - app/models/ai.server.js      ⚠️  AI_PROMPT 旧版 (未被任何路由使用, 可废弃)
+# =====================================================================

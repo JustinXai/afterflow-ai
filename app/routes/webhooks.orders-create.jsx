@@ -1,6 +1,6 @@
 import { authenticate } from "../shopify.server";
-import { analyzeOrderNote } from "../services/ai.server";
 import { updateShopifyOrderTags, prependOrderNote } from "../models/ai.server";
+import { analyzeOrderNote } from "../services/ai.server";
 import prisma from "../db.server";
 
 /**
@@ -12,7 +12,7 @@ import prisma from "../db.server";
  *   2. Skip if AF_PCD_APPROVED is not "true"
  *   3. Skip if no customer note
  *   4. Skip if order already analyzed (idempotency)
- *   5. Call DeepSeek via analyzeOrderNote()
+ *   5. Call /api/analyze (headless, unified prompt = TEXT_PROMPT 10-rule version)
  *   6. Write tags + prepend note via Shopify Admin API (admin client from adapter)
  *   7. Persist result to Prisma (AiLog)
  *

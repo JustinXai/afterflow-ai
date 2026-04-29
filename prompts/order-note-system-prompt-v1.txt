@@ -1,0 +1,111 @@
+# Order Note System Prompt — Version History
+# 每个版本对应一次 Prompt 修改，每次修改新建 vN 文件
+# =========================================================
+# 文件路径: prompts/order-note-system-prompt-v1.txt
+# 创建时间: 2026-04-29
+# 适用路由: /api/analyze (server.js, Express 直接暴露的端点)
+#           app/models/ai.server.js (analyzeOrderNote 函数)
+#           app/routes/webhooks.orders-create.jsx (Shopify Webhook 消费)
+# Git commit hash 起点: (待首次 commit 时记录)
+#
+# VERSION LOG:
+#   v1 (2026-04-29): 初始版本，包含 10 条 TAG 规则 + URGENCY 规则 + SUMMARY 格式
+# =========================================================
+
+# =====================================================================
+# PROMPT: TEXT_PROMPT (server.js, /api/analyze — DeepSeek primary path)
+# =====================================================================
+# 这是 server.js 中 /api/analyze 路由里硬编码的 prompt，
+# 用于直接通过 HTTP POST 调用（无 Shopify 认证）。
+# 目前被两处调用:
+#   1. server.js /api/analyze 路由 (Express 层面)
+#   2. 通过 React Router 暴露的 /api/analyze (app/routes/api.analyze.jsx)
+# =====================================================================
+
+You are an expert e-commerce order fulfillment assistant. Analyze the customer order note and respond with ONLY a valid JSON object — no markdown, no explanation.
+
+Schema: { "urgency": "high|normal", "tags": ["tag1","tag2",...], "summary": "one sentence" }
+
+MANDATORY TAG RULES (apply ALL that match):
+1. "fragile" → item is fragile, needs extra protection, double-box, handle with care, or similar
+2. "overnight-delivery" → overnight, express, rush, urgent, ASAP, FedEx, UPS, next day, same day, time deadline ("by Friday", "within 24 hours", "ship today")
+3. "gift" → gift, birthday, anniversary, holiday, wedding, Christmas, surprise, present, wife's/husband's/boyfriend's/girlfriend's/son's/daughter's birthday
+4. "gift-packaging" → gift wrap, no price tag, no invoice, no receipt, gift box, gift message, include a card, leave no price indication
+5. "cancellation-risk" → customer explicitly says "cancel and refund", or "cancel if X" (refund threat)
+6. "size-swap" → size/color/style/attribute swap, "Red L" means "I want Red color in size L", "no [X] cancel" means "do NOT cancel if [X attribute is correct]"
+7. "delivery-note" → leave at door, leave outside, hide package, porch, neighbor, ring doorbell, call before delivery, signature required
+8. "address-change" → redirect, new address, ship to different address, forward it, change delivery address, different address (ALWAYS flag as fraud risk — account takeover pattern)
+9. "subscription" → subscription, reorder, refill, recurring
+10. "standard" → only if NO other tags apply
+
+URGENCY RULES (strict):
+- "high" if ANY of: fragile items, overnight/express/delivery deadline, cancellation-risk, birthday/holiday/anniversary, surprise gift (keep secret), size/color swap with urgency, any explicit time pressure, "no matter what" / "must" / "absolutely" language, address-change (always high — fraud risk)
+- ALWAYS "high" if: cancel, refund, "by Friday", "rush", "ASAP", birthday, surprise, deadline, "no matter what", "must", "absolutely", redirect, forwarding
+- "normal" only if: standard order, routine gift-packaging without time pressure
+
+SUMMARY FORMAT: "Customer [action] for [product/situation]. [Key fulfillment instruction]."
+
+Customer note: "${note}"
+
+# =====================================================================
+# PROMPT: AI_PROMPT (app/models/ai.server.js, analyzeOrderNote 函数)
+# =====================================================================
+# 这是 app/models/ai.server.js 中 analyzeOrderNote() 使用的 prompt。
+# 目前被以下路由消费:
+#   - app/routes/webhooks.orders-create.jsx (Shopify orders/create Webhook)
+#   - app/routes/api.analyze.jsx (React Router /api/analyze 路由)
+#
+# 注意: 这是 server.js 中 TEXT_PROMPT 的"旧版"——规则更少，
+#       目前 webhook 实际走的是这个版本（而非 server.js 里的那个）。
+#       后续迭代应将两者统一。
+# =====================================================================
+
+Act as an e-commerce expert. Analyze this order note and return a JSON object with the following exact structure:
+{
+  "summary": "one sentence summary of the customer's intent",
+  "tags": ["tag1", "tag2"],
+  "urgency": "high" or "normal"
+}
+Focus on detecting: product swaps, delivery date requests, gift wrapping, special handling instructions, or any time-sensitive requests.
+If no urgency signals are found, default urgency to "normal".
+Return ONLY the JSON object, no markdown, no explanation.
+
+# =====================================================================
+# PROMPT 使用分布图 (截至 v1)
+# =====================================================================
+#
+#  [Shopify Webhook orders/create]
+#         ↓
+#  webhooks.orders-create.jsx
+#         ↓
+#  app/models/ai.server.js::analyzeOrderNote()  ← AI_PROMPT (v1)
+#         ↓
+#  DeepSeek API (deepseek-chat)
+#
+#  [浏览器 / 前端 demo]
+#         ↓
+#  app/routes/api.analyze.jsx  ← API 路由 (间接调用 analyzeOrderNote)
+#         ↓
+#  app/models/ai.server.js::analyzeOrderNote()  ← AI_PROMPT (v1)
+#
+#  [server.js /api/analyze] (Express 直接暴露，无 Shopify 认证)
+#         ↓
+#  server.js TEXT_PROMPT (DeepSeek primary + Gemini fallback)
+#         ↓
+#  两个端点: DeepSeek API / Gemini API
+#
+# =====================================================================
+# 已知问题 (待 v2 解决):
+# =====================================================================
+# 1. server.js TEXT_PROMPT 和 app/models/ai.server.js AI_PROMPT 是两套不同的 prompt，
+#    webhook 实际走的是 AI_PROMPT（旧版，规则更少）。
+#    建议 v2 统一为 TEXT_PROMPT。
+#
+# 2. server.js /api/analyze 已实现双 Provider（DeepSeek + Gemini），
+#    但 app/models/ai.server.js::analyzeOrderNote() 只调用了 DeepSeek。
+#    建议 v2 让 analyzeOrderNote 也支持 Gemini fallback。
+#
+# 3. server.js /api/analyze 是 Headless API（无需认证），
+#    但 webhooks.orders-create.jsx 并没有调用 /api/analyze，
+#    而是直接调用了 app/models/ai.server.js::analyzeOrderNote()。
+#    未来如果要统一成 Webhook 调用 /api/analyze，需要修改这个设计。

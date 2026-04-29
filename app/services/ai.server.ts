@@ -3,13 +3,13 @@ import { getConfig } from "../utils/config.server";
 
 // ─── Shared constants ──────────────────────────────────────────────────────────
 
-const DEEPSEEK_TIMEOUT_MS = 10_000;
-const GEMINI_TIMEOUT_MS = 5_000;
+const DEEPSEEK_TIMEOUT_MS = 12_000;
+const GEMINI_TIMEOUT_MS = 12_000;
 
 // ─── Result types ─────────────────────────────────────────────────────────────
 
 export interface AnalyzeResult {
-  urgency: string;
+  urgency: "high" | "normal";
   tags: string[];
   summary: string;
   error?: false;
@@ -51,27 +51,48 @@ function normalizeConfidence(value: unknown): number {
 
 // ─── TextAnalyzer: DeepSeek ───────────────────────────────────────────────────
 
-const TEXT_SYSTEM_PROMPT = `You are an e-commerce expert analyzing a customer order note.
-Respond with ONLY a valid JSON object — no markdown, no explanation.
-Schema: { "urgency": "low|medium|high", "tags": ["tag1", "tag2"], "summary": "one sentence" }`;
+const TEXT_SYSTEM_PROMPT = `You are an expert e-commerce order fulfillment assistant. Analyze the customer order note and respond with ONLY a valid JSON object — no markdown, no explanation.
+
+Schema: { "urgency": "high|normal", "tags": ["tag1","tag2",...], "summary": "one sentence" }
+
+MANDATORY TAG RULES (apply ALL that match):
+1. "fragile" → item is fragile, needs extra protection, double-box, handle with care, or similar
+2. "overnight-delivery" → overnight, express, rush, urgent, ASAP, FedEx, UPS, next day, same day, time deadline ("by Friday", "within 24 hours", "ship today")
+3. "gift" → gift, birthday, anniversary, holiday, wedding, Christmas, surprise, present, wife's/husband's/boyfriend's/girlfriend's/son's/daughter's birthday
+4. "gift-packaging" → gift wrap, no price tag, no invoice, no receipt, gift box, gift message, include a card, leave no price indication
+5. "cancellation-risk" → customer explicitly says "cancel and refund", or "cancel if X" (refund threat)
+6. "size-swap" → size/color/style/attribute swap, "Red L" means "I want Red color in size L", "no [X] cancel" means "do NOT cancel if [X attribute is correct]"
+7. "delivery-note" → leave at door, leave outside, hide package, porch, neighbor, ring doorbell, call before delivery, signature required
+8. "address-change" → redirect, new address, ship to different address, forward it, change delivery address, different address (ALWAYS flag as fraud risk — account takeover pattern)
+9. "subscription" → subscription, reorder, refill, recurring
+10. "standard" → only if NO other tags apply
+
+URGENCY RULES (strict):
+- "high" if ANY of: fragile items, overnight/express/delivery deadline, cancellation-risk, birthday/holiday/anniversary, surprise gift (keep secret), size/color swap with urgency, any explicit time pressure, "no matter what" / "must" / "absolutely" language, address-change (always high — fraud risk)
+- ALWAYS "high" if: cancel, refund, "by Friday", "rush", "ASAP", birthday, surprise, deadline, "no matter what", "must", "absolutely", redirect, forwarding
+- "normal" only if: standard order, routine gift-packaging without time pressure
+
+SUMMARY FORMAT: "Customer [action] for [product/situation]. [Key fulfillment instruction]."
+
+Customer note: "\${note}"`;
 
 function buildTextResult(
   parsed: Record<string, unknown>,
   note: string,
 ): AnalyzeResult {
-  const urgency =
-    parsed.urgency === "low" ||
-    parsed.urgency === "medium" ||
-    parsed.urgency === "high"
-      ? String(parsed.urgency)
-      : "low";
-
   const tags = Array.isArray(parsed.tags)
-    ? parsed.tags.filter((t) => typeof t === "string").map((t) => String(t))
-    : [];
+    ? parsed.tags
+        .filter((t) => typeof t === "string")
+        .map((t) => String(t).toLowerCase().trim().replace(/\s+/g, "-"))
+    : ["manual-review"];
+
+  const urgency: "high" | "normal" =
+    parsed.urgency === "high" || parsed.urgency === "normal"
+      ? String(parsed.urgency) as "high" | "normal"
+      : "normal";
 
   const summary = parsed.summary
-    ? String(parsed.summary)
+    ? String(parsed.summary).slice(0, 200)
     : note.slice(0, 120);
 
   return { urgency, tags, summary };
@@ -84,35 +105,116 @@ export async function analyzeOrderNote(
   const cleanNote = (note ?? "").trim();
 
   if (!cleanNote) {
-    return { urgency: "low", tags: ["no_action"], summary: "No note provided" };
+    return { urgency: "normal", tags: ["standard"], summary: "No note provided." };
   }
 
-  const { deepseekApiKey, deepseekBaseUrl } = getConfig();
+  let deepseekApiKey: string | null = null;
+  let deepseekBaseUrl = "https://api.deepseek.com";
+  let geminiApiKey: string | null = null;
+  let geminiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
 
-  if (!deepseekApiKey || deepseekApiKey === "your_deepseek_api_key_here") {
-    return { error: true, reason: "DeepSeek key not configured" };
+  try {
+    const cfg = getConfig();
+    deepseekApiKey = cfg.deepseekApiKey;
+    deepseekBaseUrl = cfg.deepseekBaseUrl;
+    geminiApiKey = cfg.geminiApiKey;
+    geminiEndpoint = cfg.geminiEndpoint;
+  } catch {
+    // getConfig throws if DEEPSEEK_API_KEY is not set (standalone / dev mode).
+    // Continue — we will check geminiApiKey below.
   }
 
-  let rawResponse = "";
+  if (!deepseekApiKey && !geminiApiKey) {
+    return { error: true, reason: "No AI provider configured — set DEEPSEEK_API_KEY or GEMINI_API_KEY" };
+  }
+
+  // ── Provider 1: DeepSeek (primary) ─────────────────────────────────────────
+  if (deepseekApiKey && deepseekApiKey !== "your_deepseek_api_key_here") {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), DEEPSEEK_TIMEOUT_MS);
+
+      const response = await fetch(`${deepseekBaseUrl}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${deepseekApiKey}`,
+        },
+        body: JSON.stringify({
+          model: "deepseek-chat",
+          messages: [
+            { role: "system", content: TEXT_SYSTEM_PROMPT.replace("${note}", cleanNote) },
+            { role: "user", content: cleanNote },
+          ],
+          temperature: 0.2,
+          max_tokens: 200,
+        }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timer);
+
+      if (response.ok) {
+        const data = safeJsonParse(await response.json()) as {
+          choices?: Array<{ message?: { content?: string } }>;
+        };
+        const rawResponse = data?.choices?.[0]?.message?.content ?? "";
+        const parsed = extractJson(rawResponse);
+        const result = buildTextResult(parsed, cleanNote);
+
+        await prisma.orderAnalysis.upsert({
+          where: { orderId },
+          update: {
+            originalNote: cleanNote,
+            urgency: result.urgency,
+            tags: JSON.stringify(result.tags),
+            summary: result.summary,
+          },
+          create: {
+            orderId,
+            originalNote: cleanNote,
+            urgency: result.urgency,
+            tags: JSON.stringify(result.tags),
+            summary: result.summary,
+            createdAt: new Date(),
+          },
+        });
+
+        await prisma.aiLog.create({
+          data: {
+            orderId,
+            status: "success",
+            input: cleanNote,
+            output: JSON.stringify(result),
+            error: "",
+            processedAt: new Date(),
+          },
+        });
+
+        return result;
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(`[AfterFlow][analyzeOrderNote] DeepSeek failed: ${msg}, trying Gemini...`);
+    }
+  }
+
+  // ── Provider 2: Gemini (fallback) ─────────────────────────────────────────
+  if (!geminiApiKey) {
+    return { error: true, reason: "DeepSeek failed and no Gemini API key available" };
+  }
 
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), DEEPSEEK_TIMEOUT_MS);
+    const timer = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
 
-    const response = await fetch(`${deepseekBaseUrl}/chat/completions`, {
+    const url = `${geminiEndpoint}?key=${geminiApiKey}`;
+    const response = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${deepseekApiKey}`,
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "deepseek-chat",
-        messages: [
-          { role: "system", content: TEXT_SYSTEM_PROMPT },
-          { role: "user", content: cleanNote },
-        ],
-        temperature: 0.3,
-        max_tokens: 200,
+        contents: [{ role: "user", parts: [{ text: TEXT_SYSTEM_PROMPT.replace("${note}", cleanNote) + `\n\nCustomer note: "${cleanNote}"` }] }],
+        generationConfig: { responseMimeType: "application/json", temperature: 0.2 },
       }),
       signal: controller.signal,
     });
@@ -121,15 +223,13 @@ export async function analyzeOrderNote(
 
     if (!response.ok) {
       const body = await response.text().catch(() => "");
-      throw new Error(`DeepSeek HTTP ${response.status}: ${body}`);
+      throw new Error(`Gemini HTTP ${response.status}: ${body}`);
     }
 
     const data = safeJsonParse(await response.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
+      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
     };
-
-    rawResponse = data?.choices?.[0]?.message?.content ?? "";
-
+    const rawResponse = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
     const parsed = extractJson(rawResponse);
     const result = buildTextResult(parsed, cleanNote);
 
@@ -165,17 +265,14 @@ export async function analyzeOrderNote(
     return result;
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);
-
-    if (reason === "The user aborted a request.") {
-      return { error: true, reason: `DeepSeek request timed out after ${DEEPSEEK_TIMEOUT_MS / 1000}s` };
-    }
+    console.error(`[AfterFlow][analyzeOrderNote] All AI providers failed: ${reason}`);
 
     await prisma.aiLog.create({
       data: {
         orderId,
         status: "error",
         input: cleanNote,
-        output: rawResponse,
+        output: "",
         error: reason,
         processedAt: new Date(),
       },
