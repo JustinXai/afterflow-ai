@@ -27,6 +27,8 @@
       --danger-bg:    #fde8e8;
       --info:         #0070f3;
       --info-bg:      #e8f4fd;
+      --purple:       #7c3aed;
+      --purple-bg:    #f5e8ff;
     }
 
     body {
@@ -88,7 +90,7 @@
 
     /* ── Page Container ── */
     .page {
-      max-width: 860px;
+      max-width: 900px;
       margin: 0 auto;
       padding: 2rem 1.5rem 4rem;
     }
@@ -108,63 +110,132 @@
       margin-top: 0.35rem;
     }
 
-    /* ── Status Bar ── */
-    .status-bar {
+    /* ── Mode Tabs ── */
+    .mode-tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .mode-tab {
+      padding: 0.5rem 1.2rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      color: var(--text-muted);
+      transition: all 0.15s;
+    }
+    .mode-tab:hover { border-color: var(--accent); color: var(--accent); }
+    .mode-tab.active {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+    .mode-tab svg { vertical-align: middle; margin-right: 4px; }
+
+    /* ── Mode Panels ── */
+    .mode-panel { display: none; }
+    .mode-panel.active { display: block; }
+
+    /* ── Test Note Panel ── */
+    .test-card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 0.75rem 1.25rem;
-      margin-bottom: 1.5rem;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .test-card-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.25rem;
+    }
+    .test-card-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+    #noteInput {
+      width: 100%;
+      min-height: 90px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.88rem;
+      color: var(--text);
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.15s;
+      background: var(--bg);
+    }
+    #noteInput:focus { border-color: var(--accent); background: white; }
+    #noteInput::placeholder { color: var(--text-sub); }
+
+    .test-actions {
       display: flex;
       align-items: center;
-      gap: 1rem;
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+      flex-wrap: wrap;
     }
-    .status-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: var(--success);
-      flex-shrink: 0;
+    #testBtn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 0.65rem 1.8rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s, transform 0.1s;
     }
-    .status-dot.pulse {
-      animation: statusPulse 2s ease-in-out infinite;
-    }
-    @keyframes statusPulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
-    }
-    .status-text {
-      font-size: 0.82rem;
-      color: var(--text-muted);
-      font-weight: 500;
-    }
-    .status-text strong { color: var(--success); }
-    .status-meta {
-      margin-left: auto;
-      font-size: 0.75rem;
-      color: var(--text-sub);
-    }
+    #testBtn:hover:not(:disabled) { background: var(--accent-hover); transform: translateY(-1px); }
+    #testBtn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-    /* ── Primary Action ── */
-    .action-card {
+    .sample-links {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .sample-btn {
+      font-size: 0.75rem;
+      padding: 0.3rem 0.7rem;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      background: white;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .sample-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+    /* ── Live Order Panel ── */
+    .live-card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 12px;
       padding: 1.75rem;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1rem;
       text-align: center;
     }
-    .action-title {
+    .live-title {
       font-size: 1.05rem;
       font-weight: 600;
       color: var(--text);
       margin-bottom: 0.4rem;
     }
-    .action-desc {
+    .live-desc {
       font-size: 0.85rem;
       color: var(--text-muted);
       margin-bottom: 1.25rem;
     }
-    #heroBtn {
+    #liveBtn {
       background: var(--accent);
       color: white;
       border: none;
@@ -174,16 +245,10 @@
       font-weight: 600;
       cursor: pointer;
       font-family: inherit;
-      transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
-      box-shadow: 0 1px 3px rgba(92,106,196,0.3);
+      transition: background 0.15s, transform 0.1s;
     }
-    #heroBtn:hover:not(:disabled) {
-      background: var(--accent-hover);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(92,106,196,0.35);
-    }
-    #heroBtn:active:not(:disabled) { transform: translateY(0); }
-    #heroBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+    #liveBtn:hover:not(:disabled) { background: var(--accent-hover); transform: translateY(-1px); }
+    #liveBtn:disabled { opacity: 0.6; cursor: not-allowed; }
 
     /* ── Result Stage ── */
     #result-stage { display: none; margin-bottom: 1.5rem; }
@@ -222,27 +287,7 @@
     .result-card-sub { font-size: 0.75rem; color: var(--text-sub); }
     .result-card-body { padding: 1.25rem; }
 
-    /* Order Info */
-    .order-info {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 0.75rem;
-      margin-bottom: 1rem;
-    }
-    .order-field {}
-    .order-field-label {
-      font-size: 0.72rem;
-      font-weight: 600;
-      color: var(--text-sub);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 0.2rem;
-    }
-    .order-field-value {
-      font-size: 0.88rem;
-      color: var(--text);
-      font-weight: 500;
-    }
+    /* Note Display */
     .order-note {
       background: #fffbf0;
       border: 1px solid #f5e6b8;
@@ -275,14 +320,15 @@
       display: flex;
       gap: 0.5rem;
       flex-wrap: wrap;
-      margin-bottom: 1rem;
+      margin-bottom: 0.5rem;
     }
     .tag {
       display: inline-flex;
       align-items: center;
-      padding: 0.35rem 0.85rem;
+      gap: 0.3rem;
+      padding: 0.3rem 0.75rem;
       border-radius: 6px;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       font-weight: 600;
       opacity: 0;
       transform: translateY(6px);
@@ -293,44 +339,70 @@
     @keyframes tagSlideUp {
       to { opacity: 1; transform: translateY(0); }
     }
-    .tag.urgent    { background: var(--danger-bg); color: var(--danger); border: 1px solid #f5c3c3; }
-    .tag.gift      { background: var(--warning-bg); color: var(--warning); border: 1px solid #f5e0b0; }
-    .tag.fragile   { background: var(--info-bg);   color: var(--info);   border: 1px solid #c2e0fa; }
-    .tag.no-receipt{ background: var(--success-bg); color: var(--success); border: 1px solid #b8e0c0; }
-    .tag.swap      { background: #f5e8ff; color: #7c3aed; border: 1px solid #e0c8ff; }
-    .tag.no-action { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); }
-    .tag.default-tag { background: var(--accent-light); color: var(--accent); border: 1px solid #d0d7f5; }
+    /* Tag colors */
+    .tag.fragile            { background: var(--info-bg);   color: var(--info);   border: 1px solid #c2e0fa; }
+    .tag.overnight-delivery { background: var(--danger-bg); color: var(--danger); border: 1px solid #f5c3c3; }
+    .tag.gift               { background: var(--warning-bg); color: var(--warning); border: 1px solid #f5e0b0; }
+    .tag.gift-packaging     { background: var(--warning-bg); color: var(--warning); border: 1px solid #f5e0b0; }
+    .tag.cancellation-risk   { background: var(--danger-bg); color: var(--danger); border: 1px solid #f5c3c3; }
+    .tag.size-swap           { background: var(--purple-bg); color: var(--purple); border: 1px solid #e0c8ff; }
+    .tag.delivery-note       { background: var(--info-bg);   color: var(--info);   border: 1px solid #c2e0fa; }
+    .tag.address-change      { background: var(--danger-bg); color: var(--danger); border: 1px solid #f5c3c3; }
+    .tag.subscription       { background: var(--accent-light); color: var(--accent); border: 1px solid #d0d7f5; }
+    .tag.standard           { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); }
+    .tag.manual-review      { background: var(--accent-light); color: var(--accent); border: 1px solid #d0d7f5; }
+    .tag.default-tag         { background: var(--accent-light); color: var(--accent); border: 1px solid #d0d7f5; }
 
     /* Urgency + Summary */
     .urgency-summary {
-      display: grid;
-      grid-template-columns: auto 1fr;
+      display: flex;
       gap: 0.75rem;
-      align-items: start;
+      align-items: center;
+      flex-wrap: wrap;
     }
     .urgency-pill {
       display: flex;
       align-items: center;
       gap: 0.4rem;
-      padding: 0.4rem 0.85rem;
+      padding: 0.35rem 0.85rem;
       border-radius: 8px;
       font-size: 0.78rem;
       font-weight: 700;
       letter-spacing: 0.3px;
       white-space: nowrap;
+      flex-shrink: 0;
     }
-    .urgency-pill.high   { background: var(--danger-bg); color: var(--danger); border: 1px solid #f5c3c3; }
+    .urgency-pill.high   { background: var(--danger-bg);  color: var(--danger);  border: 1px solid #f5c3c3; }
     .urgency-pill.normal { background: var(--success-bg); color: var(--success); border: 1px solid #b8e0c0; }
-    .urgency-pill.low    { background: var(--warning-bg); color: var(--warning); border: 1px solid #f5e0b0; }
     .urgency-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
     .summary-card {
       background: var(--bg);
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 0.7rem 1rem;
+      padding: 0.65rem 1rem;
       font-size: 0.85rem;
       color: var(--text-muted);
       line-height: 1.6;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    /* Provider badge */
+    .provider-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.7rem;
+      color: var(--text-sub);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.15rem 0.5rem;
+    }
+    .provider-badge .dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--success);
     }
 
     /* ── Monitor Panels ── */
@@ -397,7 +469,7 @@
     .wh-tag.ok    { color: var(--success); }
     .wh-tag.wait  { color: var(--warning); }
     .wh-tag.ai    { color: var(--accent); }
-    .wh-tag.done  { color: #7c3aed; }
+    .wh-tag.done  { color: var(--purple); }
     .wh-tag.err   { color: var(--danger); }
     .rs-prefix { color: var(--text-sub); }
     .rs-text { color: var(--text-muted); }
@@ -416,64 +488,40 @@
       font-style: italic;
     }
 
-    /* ── Simulated Demo ── */
-    .demo-card {
+    /* ── Status Bar ── */
+    .status-bar {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.5rem;
+      border-radius: 10px;
+      padding: 0.75rem 1.25rem;
       margin-bottom: 1.5rem;
-    }
-    .demo-card-header {
       display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      margin-bottom: 1rem;
+      align-items: center;
+      gap: 1rem;
     }
-    .demo-card-title {
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: var(--text);
-    }
-    .demo-card-desc {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      margin-top: 0.2rem;
-    }
-    #runDemo {
-      background: white;
-      color: var(--accent);
-      border: 1.5px solid var(--accent);
-      padding: 0.5rem 1.2rem;
-      border-radius: 7px;
-      font-size: 0.82rem;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: inherit;
-      transition: background 0.15s, color 0.15s;
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--success);
       flex-shrink: 0;
     }
-    #runDemo:hover { background: var(--accent); color: white; }
-    .demo-note {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 7px;
-      padding: 0.7rem 1rem;
+    .status-dot.pulse {
+      animation: statusPulse 2s ease-in-out infinite;
+    }
+    @keyframes statusPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .status-text {
       font-size: 0.82rem;
       color: var(--text-muted);
-      margin-bottom: 1rem;
-    }
-    .demo-note span { color: var(--text); font-weight: 500; font-style: italic; }
-    #sim-tags { display: flex; gap: 0.5rem; flex-wrap: wrap; min-height: 34px; margin-bottom: 0.75rem; }
-    #sim-summary {
-      display: none;
-      background: var(--success-bg);
-      border: 1px solid #b8e0c0;
-      border-radius: 7px;
-      padding: 0.6rem 1rem;
-      font-size: 0.82rem;
-      color: var(--success);
       font-weight: 500;
+    }
+    .status-text strong { color: var(--success); }
+    .status-meta {
+      margin-left: auto;
+      font-size: 0.75rem;
+      color: var(--text-sub);
     }
 
     /* ── Execution Log ── */
@@ -549,27 +597,56 @@
     <!-- Header -->
     <div class="page-header">
       <div class="page-title">Order Intelligence</div>
-      <div class="page-subtitle">AI-powered order note analysis &mdash; powered by DeepSeek</div>
+      <div class="page-subtitle">AI-powered order note analysis &mdash; powered by Gemini</div>
     </div>
 
-    <!-- Status Bar -->
-    <div class="status-bar">
-      <div class="status-dot pulse"></div>
-      <div class="status-text"><strong>Live</strong> &mdash; Listening for Shopify webhook events</div>
-      <div class="status-meta">v1.0 &middot; DeepSeek model</div>
+    <!-- Mode Tabs -->
+    <div class="mode-tabs">
+      <button class="mode-tab active" id="tabTest" onclick="switchMode('test')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Test Note
+      </button>
+      <button class="mode-tab" id="tabLive" onclick="switchMode('live')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+        Live Shopify Order
+      </button>
     </div>
 
-    <!-- Primary Action -->
-    <div class="action-card">
-      <div class="action-title">Analyze a live order from your Shopify store</div>
-      <div class="action-desc">Fetches the most recent order with a customer note and runs AI analysis</div>
-      <button id="heroBtn">Analyze Latest Order</button>
+    <!-- Test Note Panel -->
+    <div class="mode-panel active" id="panelTest">
+      <div class="test-card">
+        <div class="test-card-title">Enter a customer order note</div>
+        <div class="test-card-desc">Type or paste any order note below, then click Analyze to test the AI parser.</div>
+        <textarea id="noteInput" placeholder="e.g. Gift wrapping needed, please include a card with 'Happy Birthday' message..."></textarea>
+        <div class="test-actions">
+          <button id="testBtn">Analyze Note</button>
+          <div class="sample-links">
+            <button class="sample-btn" onclick="loadSample('FedEx overnight')">FedEx overnight</button>
+            <button class="sample-btn" onclick="loadSample('birthday gift')">Birthday gift</button>
+            <button class="sample-btn" onclick="loadSample('cancel risk')">Cancel risk</button>
+            <button class="sample-btn" onclick="loadSample('fragile')">Fragile</button>
+            <button class="sample-btn" onclick="loadSample('address fraud')">Address fraud</button>
+            <button class="sample-btn" onclick="loadSample('size swap')">Size swap</button>
+            <button class="sample-btn" onclick="loadSample('surprise')">Surprise gift</button>
+            <button class="sample-btn" onclick="loadSample('wedding')">Wedding</button>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- Result Stage (hidden until analysis) -->
+    <!-- Live Order Panel -->
+    <div class="mode-panel" id="panelLive">
+      <div class="live-card">
+        <div class="live-title">Analyze a live order from your Shopify store</div>
+        <div class="live-desc">Fetches the most recent order with a customer note and runs AI analysis</div>
+        <button id="liveBtn">Analyze Latest Order</button>
+      </div>
+    </div>
+
+    <!-- Result Stage -->
     <div id="result-stage">
 
-      <!-- Order Card -->
+      <!-- Analyzed Note Card -->
       <div class="result-card">
         <div class="result-card-header">
           <div class="result-card-icon">
@@ -580,38 +657,25 @@
             </svg>
           </div>
           <div>
-            <div class="result-card-title">Order Analyzed</div>
-            <div class="result-card-sub">Shopify order data &amp; AI analysis result</div>
+            <div class="result-card-title">Note Analyzed</div>
+            <div class="result-card-sub" id="res-source">Customer order note</div>
+          </div>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:0.5rem;">
+            <span class="provider-badge" id="providerBadge">
+              <span class="dot"></span>
+              <span id="providerName">AI</span>
+            </span>
           </div>
         </div>
         <div class="result-card-body">
-          <div class="order-info">
-            <div class="order-field">
-              <div class="order-field-label">Order</div>
-              <div class="order-field-value" id="res-order-name">&mdash;</div>
-            </div>
-            <div class="order-field">
-              <div class="order-field-label">Payment</div>
-              <div class="order-field-value" id="res-financial-status">&mdash;</div>
-            </div>
-            <div class="order-field">
-              <div class="order-field-label">Fulfillment</div>
-              <div class="order-field-value" id="res-fulfillment-status">&mdash;</div>
-            </div>
-          </div>
-          <div id="res-note-row" style="display:none;">
-            <div class="order-note">
-              <div class="order-note-label">Customer Note</div>
-              <span id="res-order-note"></span>
-            </div>
-          </div>
+          <div class="order-note" id="res-note-display"></div>
         </div>
       </div>
 
       <!-- AI Tags -->
       <div class="result-card">
         <div class="result-card-header">
-          <div class="result-card-icon" style="background:#f5e8ff;color:#7c3aed;">
+          <div class="result-card-icon" style="background:var(--purple-bg);color:var(--purple);">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10"/>
               <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/>
@@ -646,7 +710,7 @@
           <div class="urgency-summary">
             <div class="urgency-pill" id="urgency-pill">
               <div class="urgency-dot"></div>
-              <span id="urgency-label">&mdash;</span>
+              <span id="urgency-label">—</span>
             </div>
             <div class="summary-card" id="summary-text">Waiting for analysis...</div>
           </div>
@@ -661,11 +725,11 @@
         <div class="panel-header">
           <div class="panel-title" id="webhook-panel-title">
             <div class="panel-dot"></div>
-            Webhook Monitor
+            Execution Log
           </div>
         </div>
         <div class="panel-body">
-          <div id="webhook-lines"><div class="placeholder">Waiting for incoming orders...</div></div>
+          <div id="webhook-lines"><div class="placeholder">Analysis results will appear here...</div></div>
         </div>
       </div>
       <div class="panel">
@@ -676,50 +740,57 @@
           </div>
         </div>
         <div class="panel-body">
-          <div id="reasoning-text"><div class="placeholder">Ready to analyze orders.</div></div>
+          <div id="reasoning-text"><div class="placeholder">Ready to analyze notes.</div></div>
         </div>
       </div>
-    </div>
-
-    <!-- Simulated Demo -->
-    <div class="demo-card">
-      <div class="demo-card-header">
-        <div>
-          <div class="demo-card-title">Quick Demo</div>
-          <div class="demo-card-desc">Try it instantly without connecting Shopify</div>
-        </div>
-        <button id="runDemo">Run Demo</button>
-      </div>
-      <div class="demo-note">
-        Sample customer note: <span>"Red L, no red cancel, gift packaging please"</span>
-      </div>
-      <div id="sim-tags"></div>
-      <div id="sim-summary">AI parsed &mdash; Urgency: High &middot; Tags: Urgent, Gift, Fragile</div>
     </div>
 
     <!-- Live Log -->
     <div id="live-log">
-      <div id="live-log-title">Execution Log</div>
+      <div id="live-log-title">Raw Execution Log</div>
       <div id="log-lines"></div>
     </div>
 
     <!-- Footer -->
     <div class="footer">
-      AfterFlow AI &middot; Order Intelligence &middot; Powered by DeepSeek<br>
+      AfterFlow AI &middot; Order Intelligence &middot; Powered by Gemini<br>
+      <a href="/privacy">Privacy Policy</a> &middot;
       <a href="https://x.com/JustinXai" target="_blank">@JustinXai</a>
     </div>
 
   </main>
 
-  <!-- ═══════════════════════════════════════════════════════════════════
-       SCRIPTS
-  ═════════════════════════════════════════════════════════════════════ -->
   <script>
     // ─── Utilities ──────────────────────────────────────────────────────────────
     function sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
     function ts() {
       var n = new Date();
       return n.toLocaleTimeString('en-US',{hour12:false}) + '.' + String(n.getMilliseconds()).padStart(3,'0');
+    }
+
+    // ─── Mode Switching ─────────────────────────────────────────────────────────
+    function switchMode(mode) {
+      document.getElementById('tabTest').classList.toggle('active', mode === 'test');
+      document.getElementById('tabLive').classList.toggle('active', mode === 'live');
+      document.getElementById('panelTest').classList.toggle('active', mode === 'test');
+      document.getElementById('panelLive').classList.toggle('active', mode === 'live');
+    }
+
+    // ─── Sample Notes ───────────────────────────────────────────────────────────
+    var SAMPLES = {
+      'FedEx overnight': "Please ship via FedEx overnight. Gift for wife's birthday. No price tags!",
+      'birthday gift': "Happy Birthday, Laura! Could you add a card with the message 'Happy Birthday, Laura'?",
+      'cancel risk': "If you can't ship by Friday, cancel the order and refund immediately.",
+      'fragile': "Fragile items — double box and handle with care.",
+      'address fraud': "Please redirect this package to my new address: 123 Main St. Forward it!",
+      'size swap': "Red L, no red cancel. Client is waiting.",
+      'surprise': "Surprise? No invoice, gift wrap everything.",
+      'wedding': "Fragile!! Handle with care, Ben's wedding gift. It's a surprise — no price tags please."
+    };
+
+    function loadSample(name) {
+      document.getElementById('noteInput').value = SAMPLES[name] || '';
+      document.getElementById('noteInput').focus();
     }
 
     // ─── Live Log ───────────────────────────────────────────────────────────────
@@ -736,11 +807,9 @@
       el.parentElement.scrollTop = 1e9;
     }
 
-    // ─── Webhook Monitor ────────────────────────────────────────────────────────
-    function clearWebhook() {
-      document.getElementById('webhook-lines').innerHTML = '';
-    }
-    function pushWebhook(tag, msg) {
+    // ─── Execution Lines ────────────────────────────────────────────────────────
+    function clearLines() { document.getElementById('webhook-lines').innerHTML = ''; }
+    function pushLine(tag, msg) {
       var lines = document.getElementById('webhook-lines');
       var d = document.createElement('div');
       d.className = 'wh-line';
@@ -798,15 +867,33 @@
     }
 
     // ─── Tags ───────────────────────────────────────────────────────────────────
+    var TAG_CLASS_MAP = {
+      'urgent': 'overnight-delivery',
+      'gift': 'gift',
+      'gift-packaging': 'gift-packaging',
+      'fragile': 'fragile',
+      'no-receipt': 'gift-packaging',
+      'swap': 'size-swap',
+      'size-swap': 'size-swap',
+      'cancellation-risk': 'cancellation-risk',
+      'overnight-delivery': 'overnight-delivery',
+      'delivery-note': 'delivery-note',
+      'address-change': 'address-change',
+      'subscription': 'subscription',
+      'standard': 'standard',
+      'manual-review': 'manual-review',
+      'no-action': 'standard',
+    };
+
     function renderTags(tags, containerId) {
       var el = document.getElementById(containerId);
       el.innerHTML = '';
-      var known = ['urgent','gift','fragile','no-receipt','swap','no-action'];
 
       tags.forEach(function(tag, i) {
         var span = document.createElement('span');
         var tc = tag.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-        span.className = 'tag ' + (known.indexOf(tc) !== -1 ? tc : 'default-tag');
+        var cls = TAG_CLASS_MAP[tc] || 'default-tag';
+        span.className = 'tag ' + cls;
         span.textContent = tag;
         span.style.animationDelay = (i * 0.08) + 's';
         el.appendChild(span);
@@ -814,108 +901,56 @@
       });
     }
 
-    // ─── Simulated Demo ─────────────────────────────────────────────────────────
-    var SIMULATED_TAGS = [
-      { name: 'Urgent',    class: 'urgent',     delay: 0   },
-      { name: 'Gift',      class: 'gift',      delay: 150 },
-      { name: 'Fragile',   class: 'fragile',   delay: 300 },
-    ];
+    // ─── Show Result ────────────────────────────────────────────────────────────
+    function showResult(note, result, source) {
+      var resultEl = document.getElementById('result-stage');
+      resultEl.style.display = 'block';
 
-    document.getElementById('runDemo').addEventListener('click', function() {
-      var simTags = document.getElementById('sim-tags');
-      var simSum  = document.getElementById('sim-summary');
-      simTags.innerHTML = '';
-      simSum.style.display = 'none';
-      SIMULATED_TAGS.forEach(function(tag) {
-        setTimeout(function() {
-          var s = document.createElement('span');
-          s.className = 'tag tag-active ' + tag.class;
-          s.textContent = tag.name;
-          simTags.appendChild(s);
-        }, tag.delay);
-      });
-      setTimeout(function() { simSum.style.display = 'block'; }, 800);
-    });
+      document.getElementById('res-source').textContent = source || 'Customer order note';
+      document.getElementById('res-note-display').textContent = note;
+      document.getElementById('providerName').textContent = (result.provider || 'ai').toUpperCase();
 
-    // ─── Hero: Fetch Order & Analyze ───────────────────────────────────────────
-    document.getElementById('heroBtn').addEventListener('click', async function() {
-      var btn       = document.getElementById('heroBtn');
-      var resultEl  = document.getElementById('result-stage');
-      var logEl     = document.getElementById('live-log');
-      var tagsStage = document.getElementById('tags-stage');
-      var whTitle   = document.getElementById('webhook-panel-title');
-      var urgRow    = document.getElementById('urgency-pill').parentElement.parentElement;
+      var urgClass = result.urgency === 'high' ? 'high' : 'normal';
+      document.getElementById('urgency-pill').className = 'urgency-pill ' + urgClass;
+      document.getElementById('urgency-label').textContent = (result.urgency || 'unknown').toUpperCase();
+      document.getElementById('summary-text').textContent = result.summary || '—';
 
-      btn.disabled = true;
-      btn.textContent = 'Analyzing...';
+      renderTags(result.tags && result.tags.length > 0 ? result.tags : ['manual-review'], 'tags-stage');
+
+      document.getElementById('result-stage').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // ─── Core Analyze Function ──────────────────────────────────────────────────
+    async function doAnalyze(note, source) {
+      var logEl = document.getElementById('live-log');
+      var whTitle = document.getElementById('webhook-panel-title');
+      var btn = source === 'live' ? document.getElementById('liveBtn') : document.getElementById('testBtn');
+
+      if (btn) { btn.disabled = true; btn.textContent = 'Analyzing...'; }
       logEl.style.display = 'block';
       clearLog();
-      clearWebhook();
+      clearLines();
       clearReasoning();
       whTitle.classList.add('active');
-
-      resultEl.style.display = 'none';
-      tagsStage.innerHTML = '';
-      document.getElementById('res-note-row').style.display = 'none';
+      document.getElementById('result-stage').style.display = 'none';
 
       try {
-        // Phase 1: Fetch order
-        pushLog('Connecting to Shopify Admin API...', '');
-        pushWebhook('wait', 'Establishing connection...');
-        await sleep(280);
-
-        var latestRes  = await fetch('/api/latest-order');
-        var latestData = await latestRes.json();
-
-        if (!latestRes.ok) throw new Error((latestData.error || 'Server error') + ' (HTTP ' + latestRes.status + ')');
-
-        var order = latestData.order;
-        if (!order) {
-          pushWebhook('err', 'No orders with customer notes found.');
-          pushLog('No orders found.', 'err');
-          whTitle.classList.remove('active');
-          return;
-        }
-
-        pushWebhook('ok', 'Connection established.');
-        pushWebhook('ok', 'Order fetched: ' + order.name);
-        pushLog('Order fetched: ' + order.name, 'ok');
-        await sleep(200);
-
-        resultEl.style.display = 'block';
-        document.getElementById('res-order-name').textContent = order.name;
-        document.getElementById('res-financial-status').textContent = order.financialStatus || '—';
-        document.getElementById('res-fulfillment-status').textContent = order.fulfillmentStatus || 'Unfulfilled';
-
-        var noteToAnalyze = order.note;
-        if (noteToAnalyze) {
-          document.getElementById('res-note-row').style.display = 'block';
-          document.getElementById('res-order-note').textContent = noteToAnalyze;
-          pushWebhook('ok', 'Note: "' + noteToAnalyze.slice(0, 60) + (noteToAnalyze.length > 60 ? '...' : '') + '"');
-        } else {
-          noteToAnalyze = '(no note)';
-          pushWebhook('err', 'No note on this order.');
-        }
-
-        // Phase 2: AI Analysis
-        pushWebhook('ai', 'Routing to DeepSeek AI engine...');
-        pushWebhook('ai', 'Analyzing customer intent...');
-        pushLog('Calling DeepSeek AI...', 'ai');
-        await sleep(220);
+        pushLine('wait', 'Calling AI engine...');
+        pushLog('Analyzing note: "' + note.slice(0, 80) + (note.length > 80 ? '...' : '') + '"', 'ai');
 
         var reasoningSteps = [
-          { prefix: '1.', text: 'Detecting urgency signals in note...',  speed: 22, pause: 280 },
-          { prefix: '2.', text: 'Identifying gift & packaging requests...', speed: 20, pause: 280 },
-          { prefix: '3.', text: 'Mapping keywords to shipping tags...',    speed: 20, pause: 280 },
-          { prefix: '4.', text: 'Scoring cancellation risk...',           speed: 22, pause: 280 },
-          { prefix: '5.', text: 'Generating AI summary...',                speed: 20, pause: 300 },
+          { prefix: '1.', text: 'Parsing urgency signals...',            speed: 18, pause: 200 },
+          { prefix: '2.', text: 'Identifying gift & packaging needs...',  speed: 18, pause: 200 },
+          { prefix: '3.', text: 'Detecting risk factors...',             speed: 18, pause: 200 },
+          { prefix: '4.', text: 'Mapping keywords to tags...',           speed: 18, pause: 200 },
+          { prefix: '5.', text: 'Generating summary...',                 speed: 18, pause: 200 },
         ];
         typeLines(reasoningSteps);
 
         var analyzeRes = await fetch('/api/analyze', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ note: noteToAnalyze, orderId: order.id }),
+          body: JSON.stringify({ note: note, orderId: 'test-' + Date.now() }),
         });
 
         if (!analyzeRes.ok) {
@@ -924,35 +959,81 @@
         }
 
         var result = await analyzeRes.json();
-        pushWebhook('ai', 'DeepSeek response received.');
-        pushLog('Analysis complete.', 'ok');
-        await sleep(300);
+        pushLine('ai', (result.provider || 'AI').toUpperCase() + ' response received.');
+        pushLog('Analysis complete. Provider: ' + (result.provider || 'unknown'), 'ok');
 
-        // Finalize reasoning
         reasonQueue = [];
         clearReasoning();
         document.getElementById('reasoning-text').innerHTML =
           '<div class="rs-block"><span class="rs-prefix">&radic;</span> <span class="rs-text done">Analysis complete.</span></div>';
 
-        renderTags(result.tags && result.tags.length > 0 ? result.tags : ['no-action'], 'tags-stage');
+        showResult(note, result, source);
 
-        var urgClass = result.urgency === 'high' ? 'high' : (result.urgency === 'normal' ? 'normal' : 'low');
-        var urgLabel = (result.urgency || 'unknown').toUpperCase();
-        document.getElementById('urgency-pill').className = 'urgency-pill ' + urgClass;
-        document.getElementById('urgency-label').textContent = urgLabel;
-        document.getElementById('summary-text').textContent = result.summary || '—';
-
-        pushWebhook('done', 'Tags: ' + (result.tags || []).join(', '));
-        pushWebhook('done', 'Urgency: ' + urgLabel + ' — ' + (result.summary || '').slice(0, 50));
-        pushLog('[Done] ' + order.name + ' | Urgency: ' + urgLabel + ' | Tags: ' + ((result.tags||[]).join(', ')), 'hi');
+        pushLine('done', 'Tags: ' + (result.tags || []).join(', '));
+        pushLine('done', 'Urgency: ' + (result.urgency || '?').toUpperCase() + ' — ' + (result.summary || '').slice(0, 60));
+        pushLog('[Done] | Urgency: ' + (result.urgency || '?').toUpperCase() + ' | Tags: ' + ((result.tags||[]).join(', ')), 'hi');
 
       } catch(err) {
-        pushWebhook('err', 'Error: ' + err.message);
+        pushLine('err', 'Error: ' + err.message);
         pushLog('Error: ' + err.message, 'err');
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = source === 'live' ? 'Analyze Latest Order' : 'Analyze Note'; }
+        whTitle.classList.remove('active');
+      }
+    }
+
+    // ─── Test Mode ───────────────────────────────────────────────────────────────
+    document.getElementById('testBtn').addEventListener('click', function() {
+      var note = document.getElementById('noteInput').value.trim();
+      if (!note) {
+        document.getElementById('noteInput').focus();
+        return;
+      }
+      doAnalyze(note, 'test');
+    });
+
+    document.getElementById('noteInput').addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        document.getElementById('testBtn').click();
+      }
+    });
+
+    // ─── Live Mode ───────────────────────────────────────────────────────────────
+    document.getElementById('liveBtn').addEventListener('click', async function() {
+      var btn = document.getElementById('liveBtn');
+      btn.disabled = true;
+      btn.textContent = 'Fetching...';
+      clearLines();
+      clearLog();
+
+      try {
+        pushLine('wait', 'Connecting to Shopify Admin API...');
+        await sleep(300);
+
+        var latestRes = await fetch('/api/latest-order');
+        var latestData = await latestRes.json();
+
+        if (!latestRes.ok) throw new Error((latestData.error || 'Server error') + ' (HTTP ' + latestRes.status + ')');
+
+        var order = latestData.order;
+        if (!order) {
+          pushLine('err', 'No orders with customer notes found.');
+          return;
+        }
+
+        pushLine('ok', 'Order fetched: ' + order.name);
+        pushLine('ok', 'Note: "' + (order.note || '').slice(0, 60) + '"');
+
+        if (order.note) {
+          await doAnalyze(order.note, 'live');
+        } else {
+          pushLine('err', 'No note on this order.');
+        }
+      } catch(err) {
+        pushLine('err', 'Error: ' + err.message);
       } finally {
         btn.disabled = false;
         btn.textContent = 'Analyze Latest Order';
-        whTitle.classList.remove('active');
       }
     });
   </script>

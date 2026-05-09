@@ -22,7 +22,13 @@ import { analyzeOrderNote } from "../models/ai.server";
 // ─── Loader ────────────────────────────────────────────────────────────────────
 
 export const loader = async ({ request }) => {
-  await authenticate.admin(request);
+  try {
+    await authenticate.admin(request);
+  } catch (err) {
+    if (err instanceof Response) throw err;
+    console.warn("[AfterFlow][app:index] admin auth failed:", err instanceof Error ? err.message : String(err));
+    return { analyses: [], recentErrors: [], pcdStatus: "unauthenticated" };
+  }
 
   const [analyses, logs, pcdStatus] = await Promise.all([
     prisma.orderAnalysis.findMany({
@@ -534,7 +540,21 @@ export default function AppIndex() {
         >
           <BlockStack gap="400">
 
-            {pcdStatus !== "approved" && <PermissionsPending />}
+            {pcdStatus === "unauthenticated" && (
+              <Card>
+                <BlockStack gap="300" align="center" padding="800">
+                  <Banner tone="warning" title="Not authenticated">
+                    <Text as="p">
+                      Please open this app from the Shopify Admin panel to authenticate.
+                      This page requires an active Shopify admin session.
+                    </Text>
+                  </Banner>
+                  <DemoCard />
+                </BlockStack>
+              </Card>
+            )}
+
+            {pcdStatus !== "approved" && pcdStatus !== "unauthenticated" && <PermissionsPending />}
 
             {pcdStatus === "approved" && (
               <>

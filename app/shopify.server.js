@@ -33,7 +33,7 @@ try {
   shopify = shopifyApp({
     apiKey: process.env.SHOPIFY_API_KEY,
     apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
-    apiVersion: ApiVersion.October25,
+    apiVersion: ApiVersion.April26,
     scopes: process.env.SCOPES?.split(","),
     appUrl: process.env.SHOPIFY_APP_URL,
     authPathPrefix: "/auth",
@@ -52,7 +52,7 @@ try {
 }
 
 export default shopify;
-export const apiVersion = ApiVersion.October25;
+export const apiVersion = ApiVersion.April26;
 export const addDocumentResponseHeaders = shopify.addDocumentResponseHeaders;
 export const authenticate = shopify.authenticate;
 export const unauthenticated = shopify.unauthenticated;

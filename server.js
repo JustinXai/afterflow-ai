@@ -37,28 +37,6 @@ async function main() {
     ssrHandler = null;
   }
 
-  if (!ssrHandler) {
-    // Static-only fallback using built-in http module
-    const http = await import("http");
-    const server = http.createServer(async (req, res) => {
-      const url = new URL(req.url, `http://${req.headers.host}`);
-      const demoPath = join(PUBLIC_PATH, "demo.html");
-      if (existsSync(demoPath) && (url.pathname === "/" || url.pathname === "/index.html")) {
-        const html = readFileSync(demoPath, "utf8");
-        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-        res.end(html);
-      } else {
-        res.writeHead(404);
-        res.end("Not Found");
-      }
-    });
-    server.listen(PORT, "0.0.0.0", () => {
-      console.log(`[AfterFlow] Static server running → http://localhost:${PORT}`);
-    });
-    return;
-  }
-
-  // SSR mode: need express for middleware
   const express = (await import("express")).default;
   const app = express();
   app.disable("x-powered-by");
@@ -100,7 +78,7 @@ async function main() {
     next();
   });
 
-  // Diagnostics route
+  // ── Health check ─────────────────────────────────────────────────────────────
   app.get("/__health", (req, res) => {
     res.json({
       ssrHandlerLoaded: !!ssrHandler,
@@ -109,27 +87,38 @@ async function main() {
         SHOPIFY_API_KEY: process.env.SHOPIFY_API_KEY ? "(set)" : "(MISSING)",
         SHOPIFY_API_SECRET: process.env.SHOPIFY_API_SECRET ? "(set)" : "(MISSING)",
         SHOPIFY_APP_URL: process.env.SHOPIFY_APP_URL || "(MISSING)",
+        GEMINI_API_KEY: process.env.GEMINI_API_KEY ? "(set)" : "(MISSING)",
+        NODE_ENV: process.env.NODE_ENV || "unset",
+        AI_ENGINE: "Gemini Flash (primary) + DeepSeek (fallback)",
       },
     });
   });
 
-  // Error handler
+  // ── /api/analyze ───────────────────────────────────────────────────────────────
+  // IMPLEMENTATION MOVED to: app/routes/api.analyze.jsx (React Router action)
+  // Unified with the React Router route so analyzeOrderNote() from ai.server.js is shared
+  // across the dashboard and webhook handler. Express version removed to avoid duplication.
+
+  // ── /api/latest-order ────────────────────────────────────────────────────────
+  // IMPLEMENTATION MOVED to: app/routes/api.latest-order.jsx (React Router loader)
+  // Uses GraphQL via authenticate.admin() for better Shopify session integration.
+  // Express version removed to avoid duplication.
+
+  // ── Error handler ───────────────────────────────────────────────────────────
   app.use((err, req, res, next) => {
-    console.error("[AfterFlow] SSR error:", err.message, err.stack);
-    res.status(500).json({ error: err.message });
+    const msg = `[AfterFlow] Express error: ${err.message}\nStack: ${err.stack}\n`;
+    process.stdout.write(msg);
+    res.status(500).json({ error: err.message || "Unexpected Server Error" });
   });
 
-  // SSR: API routes, webhooks, auth
+  // ── React Router SSR ───────────────────────────────────────────────────────
   app.all("/api/:path(*)", express.json(), express.text(), ssrHandler);
   app.all("/auth/:path(*)", ssrHandler);
-  app.all(
-    "/webhooks/:path(*)",
-    express.raw({ type: "application/json" }),
-    ssrHandler
-  );
+  app.all("/webhooks/:path(*)", ssrHandler);
   app.use(ssrHandler);
 
   app.listen(PORT, "0.0.0.0", () => {
+    console.log(`[AfterFlow] V2-SERVER RUNNING ON PORT ${PORT} (AI via React Router routes)`);
     console.log(`[AfterFlow] Server running → http://localhost:${PORT}`);
     console.log(`[AfterFlow] Demo:         http://localhost:${PORT}/`);
   });
